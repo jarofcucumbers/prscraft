@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:first_link",
+  "display": {
+    "icon": {
+      "id": "prscraft:fiber_port"
+    },
+    "title": {
+      "translate": "advancements.prscraft.fiber_link.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.fiber_link.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

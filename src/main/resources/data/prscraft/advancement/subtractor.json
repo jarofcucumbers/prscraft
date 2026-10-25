@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:math_lab",
+  "display": {
+    "icon": {
+      "id": "prscraft:adder"
+    },
+    "title": {
+      "translate": "advancements.prscraft.subtractor.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.subtractor.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

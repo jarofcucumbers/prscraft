@@ -234,12 +234,12 @@ public final class RadioGameTests {
     @GameTest(template="empty",timeoutTicks=20)
     public static void boardPixelCostsEmptyEraserAndSerialization(GameTestHelper h){
         var pos=new BlockPos(2,1,2);h.setBlock(pos,PRSCraft.BOARD.get());DrawingBoardEntity board=h.getBlockEntity(pos);
-        var chalk=new net.minecraft.world.item.ItemStack(PRSCraft.CHALKS.get(0).get());chalk.setDamageValue(1020);
+        var chalk=new net.minecraft.world.item.ItemStack(PRSCraft.CHALKS.get(0).get());chalk.setDamageValue(4092);
         h.assertTrue(BoardTools.apply(board,chalk,BoardPixels.brush(64,64,16))==4&&chalk.isEmpty(),"Last chalk must draw only its four remaining pixels and break");
         int painted=0;for(byte b:board.pixels())if(b!=0)painted++;h.assertTrue(painted==4,"No unpaid pixels may be drawn");
         var eraser=new net.minecraft.world.item.ItemStack(PRSCraft.ERASER.get());
-        int[] empty=java.util.stream.IntStream.range(0,256).toArray();BoardTools.apply(board,eraser,empty);BoardTools.apply(board,eraser,empty);
-        h.assertTrue(!eraser.isEmpty()&&eraser.getDamageValue()==512,"Blank pixels must spend eraser durability without destroying it");
+        int[] empty=java.util.stream.IntStream.range(0,256).toArray();for(int i=0;i<64;i++)BoardTools.apply(board,eraser,empty);
+        h.assertTrue(!eraser.isEmpty()&&eraser.getDamageValue()==16384,"Blank pixels must spend eraser durability without destroying it");
         h.assertTrue(BoardTools.apply(board,eraser,new int[]{64*128+64})==0,"Empty eraser cannot modify a board");
         var copy=new DrawingBoardEntity(board.getBlockPos(),board.getBlockState());copy.loadWithComponents(board.saveWithFullMetadata(h.getLevel().registryAccess()),h.getLevel().registryAccess());
         h.assertTrue(java.util.Arrays.equals(board.pixels(),copy.pixels()),"World reload must preserve the complete canvas");
@@ -251,10 +251,10 @@ public final class RadioGameTests {
     @GameTest(template="empty",timeoutTicks=20)
     public static void washingConsumesWaterAndDyePreservesWear(GameTestHelper h){
         var pos=new BlockPos(2,1,2);h.setBlock(pos,Blocks.WATER_CAULDRON.defaultBlockState().setValue(LayeredCauldronBlock.LEVEL,3));
-        var player=h.makeMockPlayer(net.minecraft.world.level.GameType.SURVIVAL);var eraser=new net.minecraft.world.item.ItemStack(PRSCraft.ERASER.get());eraser.setDamageValue(512);player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,eraser);
+        var player=h.makeMockPlayer(net.minecraft.world.level.GameType.SURVIVAL);var eraser=new net.minecraft.world.item.ItemStack(PRSCraft.ERASER.get());eraser.setDamageValue(16384);player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,eraser);
         var worldPos=h.absolutePos(pos);var hit=new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(worldPos),net.minecraft.core.Direction.UP,worldPos,false);
         PRSCraft.ERASER.get().useOn(new net.minecraft.world.item.context.UseOnContext(player,net.minecraft.world.InteractionHand.MAIN_HAND,hit));
-        h.assertTrue(eraser.getDamageValue()==0&&h.getLevel().getBlockState(worldPos).getValue(LayeredCauldronBlock.LEVEL)==2,"Washing must restore 512 uses and spend one water level");
+        h.assertTrue(eraser.getDamageValue()==0&&h.getLevel().getBlockState(worldPos).getValue(LayeredCauldronBlock.LEVEL)==2,"Washing must restore 16384 uses and spend one water level");
         PRSCraft.ERASER.get().useOn(new net.minecraft.world.item.context.UseOnContext(player,net.minecraft.world.InteractionHand.MAIN_HAND,hit));h.assertTrue(h.getLevel().getBlockState(worldPos).getValue(LayeredCauldronBlock.LEVEL)==2,"Clean eraser must not waste water");
         var chalk=new net.minecraft.world.item.ItemStack(PRSCraft.CHALKS.get(0).get());chalk.setDamageValue(567);
         var input=net.minecraft.world.item.crafting.CraftingInput.of(2,1,java.util.List.of(chalk,new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.RED_DYE)));
@@ -292,5 +292,41 @@ public final class RadioGameTests {
         h.setBlock(DSP,PRSCraft.TIME_GATE.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.NORTH));
         h.setBlock(PR,PRSCraft.INTEGRATOR.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.NORTH));
         h.assertTrue(ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(PR))).contains("timing_lab"),"A real gate followed by nonzero integration must fulfill its challenge");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void fullCanvasEraserAndLegacyToolsUpgrade(GameTestHelper h){
+        var pos=new BlockPos(2,1,2);h.setBlock(pos,PRSCraft.BOARD.get());DrawingBoardEntity board=h.getBlockEntity(pos);
+        board.paint(java.util.stream.IntStream.range(0,16384).toArray(),2);var eraser=new net.minecraft.world.item.ItemStack(PRSCraft.ERASER.get());
+        for(int i=0;i<64;i++)h.assertTrue(BoardTools.apply(board,eraser,java.util.stream.IntStream.range(i*256,(i+1)*256).toArray())==256,"Fresh eraser must clear every full-board batch");
+        h.assertTrue(!eraser.isEmpty()&&BoardTools.remaining(eraser)==0,"16384 uses must cover exactly one full canvas");for(byte p:board.pixels())h.assertTrue(p==0,"Every pixel must be cleared");
+        var old=new net.minecraft.world.item.ItemStack(PRSCraft.ERASER.get());old.set(net.minecraft.core.component.DataComponents.MAX_DAMAGE,512);old.setDamageValue(123);BoardEraserItem.upgrade(old);
+        h.assertTrue(old.getMaxDamage()==16384&&old.getDamageValue()==123,"Legacy eraser must preserve spent pixels while receiving new capacity");
+        var chalk=new net.minecraft.world.item.ItemStack(PRSCraft.CHALKS.getFirst().get());chalk.set(net.minecraft.core.component.DataComponents.MAX_DAMAGE,1024);chalk.setDamageValue(567);ChalkItem.upgrade(chalk);
+        h.assertTrue(chalk.getMaxDamage()==4096&&chalk.getDamageValue()==567,"Legacy chalk must preserve spent pixels and upgrade to 4096");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void materialGainSubtractionAndAutocorrelationGoals(GameTestHelper h){
+        setup(h);((RadioBlockEntity)h.getBlockEntity(RX)).configure(cleanRx());
+        for(String medium:java.util.List.of("fiber","metallic")){
+            h.setBlock(new BlockPos(2,1,1),block(medium+"_port"));h.setBlock(new BlockPos(3,1,1),block(medium+"_cable"));h.setBlock(CORNER,block(medium+"_cable"));h.setBlock(new BlockPos(3,1,3),block(medium+"_port"));
+            var goals=ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(RX)));h.assertTrue(goals.contains(medium.equals("fiber")?"fiber_link":"copper_link"),"Actual RX medium must fulfill matching goal");
+        }
+        CableBlockEntity cable=h.getBlockEntity(CORNER);cable.configure(new CableSettings(100,0));h.assertTrue(ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(RX))).contains("long_haul"),"Effective cable metres must qualify long haul");
+        pairSetup(h,"adder");RadioBlockEntity sum=h.getBlockEntity(DSP);var settings=sum.dsp().save();settings.putDouble("b",-1);sum.configureDsp(DspSettings.read(settings));h.assertTrue(ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(DSP))).contains("subtractor"),"Working negative-B sum must qualify");
+        h.setBlock(DSP,PRSCraft.AMPLIFIER.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.NORTH));RadioBlockEntity amp=h.getBlockEntity(DSP);amp.configureProcessor(new ProcessorSettings(12,0,1000,"bpsk",100,10,.5,false));h.assertTrue(ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(DSP))).contains("signal_boost"),"Measured unclipped gain must qualify");
+        h.setBlock(DSP,PRSCraft.CORRELATOR.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.NORTH));RadioBlockEntity cor=h.getBlockEntity(DSP);settings=cor.dsp().save();settings.putBoolean("auto",true);settings.putBoolean("normalized",true);cor.configureDsp(DspSettings.read(settings));h.assertTrue(ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(DSP))).contains("self_similarity"),"Measured normalized autocorrelation must qualify");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void transmitterLearningGoalsRequireWorkingReception(GameTestHelper h){
+        setup(h);RadioBlockEntity tx=h.getBlockEntity(TX),rx=h.getBlockEntity(RX);rx.configure(cleanRx());
+        for(String mode:java.util.List.of("analog","sampled","quantized")){
+            tx.configure(new RadioSettings("sin(10)+cos(20)+sin(30)+cos(40)",100,256,true,true,false,0,100,20,false,.5,mode,"1010",10));
+            var goals=ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(RX)));h.assertTrue(goals.contains(mode+"_link")&&goals.contains("four_tones")&&goals.contains("quiet_receiver"),"Matching mode, multitone and quiet-RX goals must qualify");
+            if(mode.equals("quantized"))h.assertTrue(goals.contains("fine_quantization")&&goals.contains("natural_sampling"),"256 levels and first-kind sampling must qualify");
+        }
+        var lab=new LabSettings(false,false,.5,-1,1,"0,1",42,.01,0,0,false,"energy",.2);
+        tx.configure(new RadioSettings("sin(10)",100,16,true,true,false,0,100,20,true,.5,"bits","10110010",10,lab));
+        var goals=ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(RX)));h.assertTrue(goals.containsAll(java.util.Set.of("finite_burst","offset_scan","energy_source")),"Finite J burst and offset must qualify on a real received waveform");
+        h.setBlock(CORNER,Blocks.AIR);h.assertTrue(ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(RX))).isEmpty(),"No learning goals may be earned from a disconnected RX");h.succeed();
     }
 }

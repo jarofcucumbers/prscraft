@@ -1,9 +1,12 @@
 {
   "parent": "minecraft:block/block",
   "textures": {
-    "case": "minecraft:block/iron_block",
-    "dark": "minecraft:block/black_concrete",
-    "accent": "minecraft:block/lime_concrete"
+    "case": "prscraft:block/instrument_case",
+    "dark": "prscraft:block/instrument_vents",
+    "accent": "prscraft:block/transmitter_panel",
+    "top": "prscraft:block/transmitter_top",
+    "panel": "prscraft:block/transmitter_panel",
+    "socket_b": "prscraft:block/socket_b"
   },
   "elements": [
     {
@@ -31,7 +34,13 @@
           "texture": "#case"
         },
         "up": {
-          "texture": "#case"
+          "texture": "#top",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "down": {
           "texture": "#case"
@@ -83,22 +92,58 @@
       ],
       "faces": {
         "north": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "south": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "east": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "west": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "up": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "down": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         }
       }
     },

@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:calibrated",
+  "display": {
+    "icon": {
+      "id": "prscraft:cable_wrench"
+    },
+    "title": {
+      "translate": "advancements.prscraft.long_haul.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.long_haul.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

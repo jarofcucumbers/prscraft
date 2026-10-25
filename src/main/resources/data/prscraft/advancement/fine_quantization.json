@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:quantized_link",
+  "display": {
+    "icon": {
+      "id": "prscraft:transmitter"
+    },
+    "title": {
+      "translate": "advancements.prscraft.fine_quantization.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.fine_quantization.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

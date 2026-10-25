@@ -3,7 +3,7 @@ import java.util.*;
 /** Handbook pages are part of the feature contract; update with every user-facing change. */
 public final class HandbookContent {
     private HandbookContent(){}
-    public static final String VERSION="0.6.0";
+    public static final String VERSION="0.7.0";
     public record Page(String id,String diagram,List<String> formulas){}
     public static final List<Page> PAGES=List.of(
         new Page("workflow","chain",List.of("TX → port → cable → port → RX","cables: 1 m by default; wrench adjusts length","A_RX = A_TX · 10^((Ptx−20−loss)/20)")),
@@ -28,10 +28,13 @@ public final class HandbookContent {
         new Page("cables","cable",List.of("L: 0.01…1000 m per cable block","damage loss=3·d·L dB","damage noise variance=0.0001·d²·L u²")),
         new Page("advancements","achievements",List.of("link · calibration · correlation · whole-circuit survey")),
         new Page("line_coding","urz",List.of("UNRZ: 1 → +A; 0 → 0 for one Tb","URZ: 1 → +A for duty·Tb, then 0","Tb = 1 / Rb; decision threshold = A_RX / 2")),
-        new Page("drawing","drawing",List.of("128 × 128 = 16384 pixels per board","chalk: 1024 painted pixels; eraser: 512 touched pixels","16 × 16 brush = 256 durability per dab")),
+        new Page("drawing","drawing",List.of("128 × 128 = 16384 pixels per board","chalk: 4096 painted pixels; eraser: 16384 touched pixels","16 × 16 brush = 256 durability per dab")),
         new Page("challenges","achievements",List.of("valid circuit + measured result → challenge","changing settings without a working link is insufficient")),
         new Page("challenges_rx","chain",List.of("cables < 1 m; decoded bits ≥ 4","filter output energy < 0.25 × input energy")),
         new Page("challenges_math","correlation",List.of("TX + TX → SUM → INTEGRATOR","|τpeak| ≥ 0.005 s; normalized peak > 0.9")),
+        new Page("challenges_more","equipment",List.of("amplifier energy ratio ≥ 4; autocorrelation peak > 0.99","≥6 active devices; ≥100 m cable; ≥4 tones")),
+        new Page("learning_tx","sampling",List.of("sampled → quantized → L ≥ 256","Bernoulli: 0.75 ≤ P1 < 1")),
+        new Page("learning_rx","urz",List.of("UNRZ / URZ: match Rb, duty and received A","W: average power; J: finite sequence energy")),
         new Page("limits","chain",List.of("≤16 depth · ≤32 active nodes · ≤512 nodes per segment","finite-window simulation, not a real-time RF solver"))
     );
     private static final Set<String> EQUIPMENT=Set.of("transmitter","coaxial_port","fiber_port","metallic_port","coaxial_cable","fiber_cable","metallic_cable","amplifier","frequency_filter","modulator","bit_generator","line_analyzer","signal_template","data_card","handbook","adder","integrator","correlator","time_gate","delay_line","cable_wrench","drawing_board","board_eraser");

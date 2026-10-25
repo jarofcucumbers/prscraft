@@ -29,6 +29,7 @@ public final class BoardNetwork{
         int spent=budget.getInt("prscraft_draw_cost");if(spent+pixels.length>1024)return;budget.putInt("prscraft_draw_cost",spent+pixels.length);
         BoardTools.apply(board,held,pixels);player.inventoryMenu.broadcastChanges();
         if(ChallengeRules.mural(board.pixels()))Milestones.award(player,"board_artist");
+        if(ChallengeRules.fullPalette(board.pixels()))Milestones.award(player,"full_palette");
         send(player,s.pos,false);
     }));}
     public static void send(ServerPlayer p,BlockPos pos,boolean open){

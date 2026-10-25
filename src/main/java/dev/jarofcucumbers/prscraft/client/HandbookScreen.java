@@ -10,7 +10,7 @@ public final class HandbookScreen extends PanelScreen {
     private void refresh(){clearWidgets();build();}
     @Override protected void build(){
         button(14,526,110,tr("back"),b->onClose());button(132,526,150,tr("contents"),b->{contents=!contents;refresh();});
-        if(contents){for(int i=0;i<HandbookContent.PAGES.size();i++){final int index=i;var p=HandbookContent.PAGES.get(i);button(14+(i/9)*234,64+(i%9)*38,220,Component.translatable("book.prscraft."+p.id()+".title"),b->{page=index;contents=false;refresh();});}}
+        if(contents){for(int i=0;i<HandbookContent.PAGES.size();i++){final int index=i;var p=HandbookContent.PAGES.get(i);button(14+(i/10)*234,64+(i%10)*38,220,Component.translatable("book.prscraft."+p.id()+".title"),b->{page=index;contents=false;refresh();});}}
         else {button(460,526,110,Component.literal("←"),b->{page=Math.floorMod(page-1,HandbookContent.PAGES.size());});button(582,526,110,Component.literal("→"),b->{page=(page+1)%HandbookContent.PAGES.size();});}
     }
     @Override public void onClose(){minecraft.setScreen(parent);}
@@ -30,6 +30,11 @@ public final class HandbookScreen extends PanelScreen {
         g.drawString(font,(page+1)+" / "+HandbookContent.PAGES.size(),330,532,0xffbacbdb,false);
     }
     private void diagram(GuiGraphics g,String kind){
+        if(kind.equals("equipment")){
+            var blocks=new net.minecraft.world.item.Item[]{PRSCraft.TRANSMITTER.get().asItem(),PRSCraft.AMPLIFIER.get().asItem(),PRSCraft.CORRELATOR.get().asItem()};
+            for(int i=0;i<3;i++){g.pose().pushPose();g.pose().translate(392+i*100,135,0);g.pose().scale(3,3,1);g.renderItem(new ItemStack(blocks[i]),0,0);g.pose().popPose();}
+            g.drawString(font,"A → [ DSP ] → OUT",404,244,0xff99ebc0,false);g.drawString(font,"B → SUM / COR",404,268,0xff8ec9ef,false);return;
+        }
         if(kind.equals("drawing")){
             g.fill(380,105,680,270,0xff926e43);g.fill(386,111,674,264,0xff20372f);
             for(int i=0;i<220;i++){int yy=185-(int)(45*Math.sin(i*.07));g.fill(405+i,yy,408+i,yy+3,BoardPixels.RGB[(i/16)%16]);}

@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:first_link",
+  "display": {
+    "icon": {
+      "id": "prscraft:amplifier"
+    },
+    "title": {
+      "translate": "advancements.prscraft.signal_boost.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.signal_boost.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

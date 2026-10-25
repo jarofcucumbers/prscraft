@@ -1,7 +1,7 @@
 {
   "textures": {
-    "cable": "minecraft:block/copper_block",
-    "particle": "minecraft:block/copper_block"
+    "cable": "prscraft:block/metallic_jacket",
+    "particle": "prscraft:block/metallic_jacket"
   },
   "elements": [
     {

@@ -1,9 +1,10 @@
 {
   "parent": "minecraft:block/block",
   "textures": {
-    "case": "minecraft:block/iron_block",
-    "dark": "minecraft:block/black_concrete",
-    "accent": "minecraft:block/copper_block"
+    "case": "prscraft:block/instrument_case",
+    "dark": "prscraft:block/socket_dark",
+    "accent": "prscraft:block/metallic_connector",
+    "particle": "prscraft:block/metallic_connector"
   },
   "elements": [
     {

@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:block/block",
   "textures": {
-    "cable": "minecraft:block/black_concrete",
-    "particle": "minecraft:block/black_concrete"
+    "cable": "prscraft:block/coaxial_jacket",
+    "particle": "prscraft:block/coaxial_jacket"
   },
   "elements": [
     {

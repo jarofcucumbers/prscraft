@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:first_link",
+  "display": {
+    "icon": {
+      "id": "prscraft:bit_generator"
+    },
+    "title": {
+      "translate": "advancements.prscraft.biased_bits.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.biased_bits.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

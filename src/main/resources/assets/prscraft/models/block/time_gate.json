@@ -1,12 +1,15 @@
 {
   "parent": "minecraft:block/block",
   "textures": {
-    "body": "minecraft:block/iron_block",
-    "dark": "minecraft:block/black_concrete",
-    "accent": "minecraft:block/red_concrete",
-    "input": "minecraft:block/orange_concrete",
-    "output": "minecraft:block/lime_concrete",
-    "particle": "minecraft:block/iron_block"
+    "body": "prscraft:block/instrument_case",
+    "dark": "prscraft:block/instrument_vents",
+    "accent": "prscraft:block/time_gate_panel",
+    "input": "prscraft:block/socket_a",
+    "output": "prscraft:block/socket_out",
+    "particle": "prscraft:block/instrument_case",
+    "top": "prscraft:block/time_gate_top",
+    "panel": "prscraft:block/time_gate_panel",
+    "socket_b": "prscraft:block/socket_b"
   },
   "elements": [
     {
@@ -34,7 +37,13 @@
           "texture": "#body"
         },
         "up": {
-          "texture": "#body"
+          "texture": "#top",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "down": {
           "texture": "#body"
@@ -86,22 +95,58 @@
       ],
       "faces": {
         "north": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "south": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "east": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "west": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "up": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "down": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         }
       }
     },

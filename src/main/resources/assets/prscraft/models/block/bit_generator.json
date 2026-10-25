@@ -1,10 +1,13 @@
 {
   "parent": "minecraft:block/block",
   "textures": {
-    "case": "minecraft:block/iron_block",
-    "dark": "minecraft:block/black_concrete",
-    "accent": "minecraft:block/red_concrete",
-    "particle": "minecraft:block/iron_block"
+    "case": "prscraft:block/instrument_case",
+    "dark": "prscraft:block/instrument_vents",
+    "accent": "prscraft:block/bit_generator_panel",
+    "particle": "prscraft:block/instrument_case",
+    "top": "prscraft:block/bit_generator_top",
+    "panel": "prscraft:block/bit_generator_panel",
+    "socket_b": "prscraft:block/socket_b"
   },
   "elements": [
     {
@@ -32,7 +35,13 @@
           "texture": "#case"
         },
         "up": {
-          "texture": "#case"
+          "texture": "#top",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "down": {
           "texture": "#case"
@@ -84,22 +93,58 @@
       ],
       "faces": {
         "north": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "south": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "east": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "west": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "up": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         },
         "down": {
-          "texture": "#accent"
+          "texture": "#accent",
+          "uv": [
+            0,
+            0,
+            16,
+            16
+          ]
         }
       }
     },

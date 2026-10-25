@@ -25,8 +25,8 @@ public final class PRSCraft {
     public static final DeferredItem<TemplateItem> TEMPLATE=ITEMS.register("signal_template",()->new TemplateItem(new Item.Properties().stacksTo(1)));
     public static final DeferredBlock<DrawingBoardBlock> BOARD=BLOCKS.register("drawing_board",()->new DrawingBoardBlock(BlockBehaviour.Properties.of().strength(2).noOcclusion()));
     public static final java.util.List<DeferredItem<ChalkItem>> CHALKS=new java.util.ArrayList<>();
-    public static final DeferredItem<BoardEraserItem> ERASER=ITEMS.register("board_eraser",()->new BoardEraserItem(new Item.Properties().durability(512).setNoRepair()));
-    static {ITEMS.registerSimpleBlockItem(BOARD);for(int i=0;i<BoardPixels.COLORS.length;i++){final int palette=i+1;CHALKS.add(ITEMS.register(BoardPixels.COLORS[i]+"_chalk",()->new ChalkItem(new Item.Properties().durability(1024).setNoRepair(),palette)));}}
+    public static final DeferredItem<BoardEraserItem> ERASER=ITEMS.register("board_eraser",()->new BoardEraserItem(new Item.Properties().durability(BoardEraserItem.CAPACITY).setNoRepair()));
+    static {ITEMS.registerSimpleBlockItem(BOARD);for(int i=0;i<BoardPixels.COLORS.length;i++){final int palette=i+1;CHALKS.add(ITEMS.register(BoardPixels.COLORS[i]+"_chalk",()->new ChalkItem(new Item.Properties().durability(ChalkItem.CAPACITY).setNoRepair(),palette)));}}
     public static final java.util.List<DeferredBlock<CableBlock>> CABLES=new java.util.ArrayList<>();
     public static final DeferredBlock<ProcessorBlock> ADDER=BLOCKS.register("adder",()->new ProcessorBlock("adder",BlockBehaviour.Properties.of().strength(3)));
     public static final DeferredBlock<ProcessorBlock> INTEGRATOR=BLOCKS.register("integrator",()->new ProcessorBlock("integrator",BlockBehaviour.Properties.of().strength(3)));
