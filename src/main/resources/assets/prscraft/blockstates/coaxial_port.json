@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "prscraft:block/coaxial_port"
+    }
+  }
+}

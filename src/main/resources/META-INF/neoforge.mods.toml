@@ -1,0 +1,20 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="All Rights Reserved"
+[[mods]]
+modId="prscraft"
+version="0.1.0"
+displayName="PRSCraft"
+description="Telecommunications laboratory: transmitters, cabling and signal budgets."
+[[dependencies.prscraft]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.264,)"
+ordering="NONE"
+side="BOTH"
+[[dependencies.prscraft]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1,1.21.2)"
+ordering="NONE"
+side="BOTH"

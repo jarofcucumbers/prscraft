@@ -1,0 +1,12 @@
+{
+  "itemGroup.prscraft": "PRSCraft · Telecommunications",
+  "block.prscraft.transmitter": "Радіопередавач",
+  "block.prscraft.coaxial_port": "Коаксіальний порт",
+  "block.prscraft.fiber_port": "Оптоволоконний порт",
+  "block.prscraft.metallic_port": "Металевий порт",
+  "message.prscraft.transmitter": "%s MHz · %s dBm · %s",
+  "message.prscraft.on": "УВІМК.",
+  "message.prscraft.off": "ВИМК.",
+  "message.prscraft.signal": "Лінія: %s м · Прийом %s dBm · Сигнал/шум %s dB",
+  "message.prscraft.no_signal": "Немає передавача на прямій сумісній лінії (до 64 м)."
+}

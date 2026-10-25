@@ -1,0 +1,9 @@
+{
+  "replace": false,
+  "values": [
+    "prscraft:transmitter",
+    "prscraft:coaxial_port",
+    "prscraft:fiber_port",
+    "prscraft:metallic_port"
+  ]
+}

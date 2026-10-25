@@ -1,0 +1,12 @@
+{
+  "itemGroup.prscraft": "PRSCraft · Telecommunications",
+  "block.prscraft.transmitter": "RF Transmitter",
+  "block.prscraft.coaxial_port": "Coaxial Port",
+  "block.prscraft.fiber_port": "Fiber Optic Port",
+  "block.prscraft.metallic_port": "Metallic Port",
+  "message.prscraft.transmitter": "%s MHz · %s dBm · %s",
+  "message.prscraft.on": "ON",
+  "message.prscraft.off": "OFF",
+  "message.prscraft.signal": "Link: %s m · RX %s dBm · SNR %s dB",
+  "message.prscraft.no_signal": "No transmitter on a straight matching link (maximum 64 m)."
+}
