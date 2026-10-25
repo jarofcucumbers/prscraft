@@ -44,8 +44,22 @@ public final class RadioNetwork {
         };
         public Type<? extends CustomPacketPayload> type(){return TYPE;}
     }
+    public record TuneCable(BlockPos pos,double metres,double damage) implements CustomPacketPayload{
+        public static final Type<TuneCable> TYPE=new Type<>(ResourceLocation.fromNamespaceAndPath(PRSCraft.ID,"tune_cable"));
+        public static final StreamCodec<RegistryFriendlyByteBuf,TuneCable> CODEC=new StreamCodec<>(){
+            public TuneCable decode(RegistryFriendlyByteBuf b){return new TuneCable(b.readBlockPos(),b.readDouble(),b.readDouble());}
+            public void encode(RegistryFriendlyByteBuf b,TuneCable p){b.writeBlockPos(p.pos);b.writeDouble(p.metres);b.writeDouble(p.damage);}
+        };public Type<? extends CustomPacketPayload> type(){return TYPE;}
+    }
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("4");
+        var registrar = event.registrar("5");
+        registrar.playToServer(TuneCable.TYPE,TuneCable.CODEC,(request,context)->context.enqueueWork(()->{
+            if(!(context.player() instanceof ServerPlayer player))return;
+            if(!player.getMainHandItem().is(PRSCraft.WRENCH.get())&&!player.getOffhandItem().is(PRSCraft.WRENCH.get()))return;
+            var level=player.serverLevel();if(player.distanceToSqr(request.pos.getX()+.5,request.pos.getY()+.5,request.pos.getZ()+.5)>64||!level.hasChunkAt(request.pos)||!player.mayBuild()||!level.mayInteract(player,request.pos)||!(level.getBlockEntity(request.pos) instanceof CableBlockEntity cable))return;
+            String error="";try{cable.configure(new CableSettings(request.metres,request.damage));Milestones.award(player,"calibrated");}catch(IllegalArgumentException e){error=e.getMessage();}
+            CableTuning.send(player,request.pos,false,error);
+        }));
         registrar.playToServer(Analyze.TYPE,Analyze.CODEC,(request,context)->context.enqueueWork(()->{
             if(!(context.player() instanceof ServerPlayer player))return;
             if(!player.getMainHandItem().is(PRSCraft.ANALYZER.get())&&!player.getOffhandItem().is(PRSCraft.ANALYZER.get()))return;
@@ -66,7 +80,7 @@ public final class RadioNetwork {
             String action=request.data.getString("action");
             if(!java.util.Set.of("","media","view","reopen").contains(action))return;
             if(action.equals("view")){
-                if(player.mayBuild()&&level.mayInteract(player,request.pos))radio.graph(request.data.getInt("graphLayers"),request.data.getInt("graphTerms"));
+                if(player.mayBuild()&&level.mayInteract(player,request.pos)){radio.graph(request.data.getInt("graphLayers"),request.data.getInt("graphTerms"));if(request.data.contains("correlationView"))radio.correlationView(request.data.getBoolean("correlationView"));}
                 return;
             }
             String rateKey = request.save ? "prscraft_save" : action.isEmpty()?"prscraft_refresh":"prscraft_"+action;
@@ -91,7 +105,8 @@ public final class RadioNetwork {
                 else try {
                     RadioSettings next=RadioSettings.read(request.data);
                     ProcessorSettings processor=request.data.contains("processor")?ProcessorSettings.read(request.data.getCompound("processor")):radio.processor();
-                    radio.configure(next);radio.configureProcessor(processor);
+                    DspSettings dsp=request.data.contains("dsp")?DspSettings.read(request.data.getCompound("dsp")):radio.dsp();
+                    radio.configure(next);radio.configureProcessor(processor);radio.configureDsp(dsp);
                     if(request.data.contains("graphLayers"))radio.graph(request.data.getInt("graphLayers"),request.data.getInt("graphTerms"));
                 }
                 catch (IllegalArgumentException e) { error = e.getMessage(); }
@@ -107,5 +122,6 @@ public final class RadioNetwork {
         if (!(level.getBlockEntity(pos) instanceof RadioBlockEntity radio)) return;
         CompoundTag data=RadioCapture.capture(level,pos);data.putString("error",error);
         PacketDistributor.sendToPlayer(player, new Snapshot(pos, open, data));
+        if(data.getBoolean("connected")){if(radio.kind().equals("radio")&&!radio.settings().transmit())Milestones.award(player,"first_link");if(radio.kind().equals("correlator")&&data.getIntArray("correlation").length==512)Milestones.award(player,"correlation");}
     }
 }

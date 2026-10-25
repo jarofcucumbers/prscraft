@@ -1,0 +1,37 @@
+{
+  "display": {
+    "icon": {
+      "id": "prscraft:integrator"
+    },
+    "title": {
+      "translate": "advancements.prscraft.math_lab.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.math_lab.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "prscraft:adder",
+              "prscraft:integrator"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ],
+  "parent": "prscraft:root"
+}

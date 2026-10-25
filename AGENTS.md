@@ -7,3 +7,5 @@ Every user-facing feature or behavior change MUST update the in-game handbook: `
 Preserve backwards-compatible NBT defaults for existing worlds, templates and recordings. Server-side settings validation and read-only analyzer behavior are required. Keep PSD/ESD normalization consistent with Parseval and distinguish finite-window metrics from whole-signal energy. Q-based AWGN theory is a symbol-space model and must not be advertised as an exact BER prediction for arbitrary nonlinear RF chains.
 
 When delivering a new release, build and validate the JAR, exclude GameTest fixtures, copy it and its SHA-256 into `releases/`. Never claim interactive UI validation unless it was actually run.
+
+Signal computation is authoritative in `CircuitCapture`/`CircuitNetwork`; analyzer topology is deliberately undirected and spans active devices. Keep A=back, B=left, OUT=front consistent in code, models and handbook. Apply cable segment losses/noise before the next DSP stage. Integrator/correlation dimensions must never be silently exported as W/J spectra. Custom pose-scaled screens use `ScaledButton`, not vanilla scrolling buttons (scissors ignore the outer pose in 1.21.1).

@@ -11,6 +11,11 @@
     "prscraft:amplifier",
     "prscraft:frequency_filter",
     "prscraft:modulator",
-    "prscraft:bit_generator"
+    "prscraft:bit_generator",
+    "prscraft:adder",
+    "prscraft:integrator",
+    "prscraft:correlator",
+    "prscraft:time_gate",
+    "prscraft:delay_line"
   ]
 }

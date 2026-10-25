@@ -3,7 +3,7 @@ import java.util.*;
 /** Handbook pages are part of the feature contract; update with every user-facing change. */
 public final class HandbookContent {
     private HandbookContent(){}
-    public static final String VERSION="0.4.0";
+    public static final String VERSION="0.5.0";
     public record Page(String id,String diagram,List<String> formulas){}
     public static final List<Page> PAGES=List.of(
         new Page("workflow","chain",List.of("TX → port → cable → port → RX","1 block = 1 m","A_RX = A_TX · 10^((Ptx−20−loss)/20)")),
@@ -21,7 +21,13 @@ public final class HandbookContent {
         new Page("presets","presets",List.of("paper + applied settings → reusable template","type / TX-RX / numeric values / icon")),
         new Page("recordings","spectrum",List.of("512 samples per capture","CSV: time, original, sampled, TX, channel, RX")),
         new Page("analyzer","chain",List.of("read only · local segment ≤256 nodes","select device → waveform / spectrum / CSV")),
-        new Page("limits","chain",List.of("≤8 processors · ≤256 nodes per medium","finite-window simulation, not a real-time RF solver"))
+        new Page("circuit","circuit",List.of("physical topology ≠ directed signal flow","A: back · B: left · OUT: front")),
+        new Page("math_blocks","math",List.of("sum: y(t)=gA·A(t)+gB·B(t)","integrator: y(t)=∫[0,min(t,T)] x(s) ds","u → u*s; unlike units cannot be added")),
+        new Page("correlation","correlation",List.of("R_AB(τ)=∫ A(t) B(t+τ) dt","ρ_AB=ΣAB/sqrt(ΣA²·ΣB²)","τpeak>0: B is delayed relative to A")),
+        new Page("timing","gate",List.of("gate: pass for t≥T, or T≤t<T+width","delay: y(t)=x(t−D), zero outside the window")),
+        new Page("cables","cable",List.of("L: 0.01…1000 m per cable block","damage loss=3·d·L dB","damage noise variance=0.0001·d²·L u²")),
+        new Page("advancements","achievements",List.of("link · calibration · correlation · whole-circuit survey")),
+        new Page("limits","chain",List.of("≤16 depth · ≤32 active nodes · ≤512 nodes per segment","finite-window simulation, not a real-time RF solver"))
     );
-    public static final Set<String> COVERED_ITEMS=Set.of("transmitter","coaxial_port","fiber_port","metallic_port","coaxial_cable","fiber_cable","metallic_cable","amplifier","frequency_filter","modulator","bit_generator","line_analyzer","signal_template","data_card","handbook");
+    public static final Set<String> COVERED_ITEMS=Set.of("transmitter","coaxial_port","fiber_port","metallic_port","coaxial_cable","fiber_cable","metallic_cable","amplifier","frequency_filter","modulator","bit_generator","line_analyzer","signal_template","data_card","handbook","adder","integrator","correlator","time_gate","delay_line","cable_wrench");
 }

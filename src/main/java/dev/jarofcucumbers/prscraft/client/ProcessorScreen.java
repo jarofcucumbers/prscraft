@@ -26,7 +26,7 @@ public final class ProcessorScreen extends Screen {
     private EditBox field(int x,int y,int width,double value,EditBox previous,String key){
         var box=new EditBox(font,x,y,width,20,tr(key));box.setMaxLength(16);box.setValue(previous==null?Double.toString(value):previous.getValue());return addRenderableWidget(box);
     }
-    private void button(int x,int y,int width,Component label,Button.OnPress press){addRenderableWidget(Button.builder(label,press).bounds(x,y,width,20).build());}
+    private void button(int x,int y,int width,Component label,Button.OnPress press){addRenderableWidget(new ScaledButton(x,y,width,label,press));}
     @Override protected void init(){
         scale=Math.min((width-8f)/W,(height-8f)/H);ox=(int)((width-W*scale)/2);oy=(int)((height-H*scale)/2);
         button(234,4,110,tr("spectrum"),b->minecraft.setScreen(new SpectrumScreen(this,snapshot)));
@@ -58,7 +58,7 @@ public final class ProcessorScreen extends Screen {
         if(oscillator.visible){g.drawString(font,tr("oscillator"),16,42,0xffc3d6e4,false);g.drawString(font,tr("bit_rate"),160,42,0xffc3d6e4,false);g.drawString(font,tr("depth"),304,42,0xffc3d6e4,false);}
         if(snapshot.contains("source"))g.drawString(font,"RF "+snapshot.getCompound("source").getDouble("carrierMHz")+" MHz",304,106,0xffc3d6e4,false);
         if(!error.isEmpty())g.drawString(font,Component.translatable("error.prscraft."+error),16,167,0xffff6b81,false);
-        else g.drawString(font,tr("direction"),16,167,0xffa9c9dd,false);
+        else g.drawString(font,snapshot.getString("fault").isEmpty()?tr("direction"):Component.translatable("fault.prscraft."+snapshot.getString("fault")),16,167,0xffa9c9dd,false);
         g.fill(16,188,454,314,0xff0a111c);g.fill(16,251,454,252,0xff344759);
         double[] input=SignalChain.unpack(snapshot.getIntArray("stageInput")),output=SignalChain.unpack(snapshot.getIntArray("emitted"));double range=1;
         for(double[] values:new double[][]{input,output})for(double v:values)range=Math.max(range,Math.abs(v)*1.1);

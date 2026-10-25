@@ -7,7 +7,13 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public final class RadioBlockEntity extends BlockEntity {
     private RadioSettings settings = RadioSettings.DEFAULT;
+    private DspSettings dsp=DspSettings.DEFAULT;
+    public DspSettings dsp(){return dsp;}
+    public void configureDsp(DspSettings value){dsp=value;setChanged();}
     private ProcessorSettings processor=ProcessorSettings.DEFAULT;
+    private boolean correlationView;
+    public boolean correlationView(){return correlationView;}
+    public void correlationView(boolean value){correlationView=value;setChanged();}
     private int graphLayers=15,graphTerms=255;
     public final net.neoforged.neoforge.items.ItemStackHandler media=new net.neoforged.neoforge.items.ItemStackHandler(2){
         @Override public int getSlotLimit(int slot){return 1;}
@@ -35,7 +41,8 @@ public final class RadioBlockEntity extends BlockEntity {
         try {
             var next=RadioSettings.read(tag.getCompound("settings"));
             var nextProcessor=ProcessorSettings.read(tag.getCompound("processor"));
-            configure(next);configureProcessor(nextProcessor);graph(tag.getInt("graphLayers"),tag.getInt("graphTerms"));return true;
+            DspSettings nextDsp=tag.contains("dsp")?DspSettings.read(tag.getCompound("dsp")):DspSettings.DEFAULT;
+            configure(next);configureProcessor(nextProcessor);configureDsp(nextDsp);correlationView(tag.getBoolean("correlationView"));graph(tag.getInt("graphLayers"),tag.getInt("graphTerms"));return true;
         }catch(IllegalArgumentException ignored){return false;}
     }
     public RadioBlockEntity(BlockPos pos, BlockState state) {
@@ -54,11 +61,13 @@ public final class RadioBlockEntity extends BlockEntity {
     }
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries); tag.put("radio", settings.save());
-        tag.put("processor",processor.save());tag.putInt("graphLayers",graphLayers);tag.putInt("graphTerms",graphTerms);
+        tag.putBoolean("correlationView",correlationView);tag.put("dsp",dsp.save());tag.put("processor",processor.save());tag.putInt("graphLayers",graphLayers);tag.putInt("graphTerms",graphTerms);
         tag.put("media",media.serializeNBT(registries));
     }
     @Override protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        correlationView=tag.getBoolean("correlationView");
+        if(tag.contains("dsp"))try{dsp=DspSettings.read(tag.getCompound("dsp"));}catch(IllegalArgumentException ignored){dsp=DspSettings.DEFAULT;}
         if(tag.contains("processor"))try{processor=ProcessorSettings.read(tag.getCompound("processor"));}catch(IllegalArgumentException ignored){processor=ProcessorSettings.DEFAULT;}
         if(tag.contains("graphLayers")){graphLayers=tag.getInt("graphLayers")&31;graphTerms=tag.getInt("graphTerms")&255;}
         if(tag.contains("media"))media.deserializeNBT(registries,tag.getCompound("media"));

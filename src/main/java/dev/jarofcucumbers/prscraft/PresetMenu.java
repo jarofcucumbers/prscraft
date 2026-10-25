@@ -39,9 +39,9 @@ public final class PresetMenu extends AbstractContainerMenu {
         var template=radio.media.getStackInSlot(0);var card=radio.media.getStackInSlot(1);
         if(action==0 && (template.is(Items.PAPER)||template.is(PRSCraft.TEMPLATE.get()))) {
             var tag=new net.minecraft.nbt.CompoundTag();tag.putString("kind",radio.kind());tag.put("settings",radio.settings().save());
-            tag.put("processor",radio.processor().save());tag.putInt("graphLayers",radio.graphLayers());tag.putInt("graphTerms",radio.graphTerms());
+            tag.put("processor",radio.processor().save());tag.put("dsp",radio.dsp().save());tag.putBoolean("correlationView",radio.correlationView());tag.putInt("graphLayers",radio.graphLayers());tag.putInt("graphTerms",radio.graphTerms());
             var result=new ItemStack(PRSCraft.TEMPLATE.get());result.set(DataComponents.CUSTOM_DATA,CustomData.of(tag));
-            result.set(DataComponents.CUSTOM_NAME,Component.literal(TemplateItem.summary(radio.kind(),radio.settings(),radio.processor())));
+            result.set(DataComponents.CUSTOM_NAME,Component.literal(TemplateItem.summary(radio.kind(),radio.settings(),radio.processor(),radio.dsp())));
             result.set(DataComponents.CUSTOM_MODEL_DATA,new net.minecraft.world.item.component.CustomModelData(TemplateItem.model(radio.kind(),radio.settings())));
             radio.media.setStackInSlot(0,result);return true;
         }
@@ -66,7 +66,7 @@ public final class PresetMenu extends AbstractContainerMenu {
                 ProcessorSettings.read(data.getCompound("processor"));
                 CaptureCsv.encode(data.getDouble("span"),new int[][]{data.getIntArray("original"),data.getIntArray("sampled"),data.getIntArray("sourceOutput"),data.getIntArray("emitted"),data.getIntArray("received")});
             }catch(IllegalArgumentException e){return false;}
-            data.putBoolean("recorded",true);data.putBoolean("connected",true);data.putString("kind","radio");
+            data.putString("captureKind",data.getString("kind"));data.putBoolean("recorded",true);data.putBoolean("connected",true);data.putString("kind","radio");
             player.closeContainer();
             PacketDistributor.sendToPlayer(serverPlayer,new RadioNetwork.Snapshot(radio.getBlockPos(),true,data));return true;
         }

@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "id": "prscraft:correlator"
+    },
+    "title": {
+      "translate": "advancements.prscraft.correlation.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.correlation.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ],
+  "parent": "prscraft:first_link"
+}

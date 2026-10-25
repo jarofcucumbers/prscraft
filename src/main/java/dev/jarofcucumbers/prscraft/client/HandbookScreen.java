@@ -10,7 +10,7 @@ public final class HandbookScreen extends PanelScreen {
     private void refresh(){clearWidgets();build();}
     @Override protected void build(){
         button(14,418,110,tr("back"),b->onClose());button(132,418,150,tr("contents"),b->{contents=!contents;refresh();});
-        if(contents){for(int i=0;i<HandbookContent.PAGES.size();i++){final int index=i;var p=HandbookContent.PAGES.get(i);button(18+(i/8)*350,68+(i%8)*40,334,Component.translatable("book.prscraft."+p.id()+".title"),b->{page=index;contents=false;refresh();});}}
+        if(contents){for(int i=0;i<HandbookContent.PAGES.size();i++){final int index=i;var p=HandbookContent.PAGES.get(i);button(14+(i/8)*234,68+(i%8)*40,220,Component.translatable("book.prscraft."+p.id()+".title"),b->{page=index;contents=false;refresh();});}}
         else {button(460,418,110,Component.literal("←"),b->{page=Math.floorMod(page-1,HandbookContent.PAGES.size());});button(582,418,110,Component.literal("→"),b->{page=(page+1)%HandbookContent.PAGES.size();});}
     }
     @Override public void onClose(){minecraft.setScreen(parent);}
@@ -25,6 +25,28 @@ public final class HandbookScreen extends PanelScreen {
         g.drawString(font,(page+1)+" / "+HandbookContent.PAGES.size(),330,424,0xffbacbdb,false);
     }
     private void diagram(GuiGraphics g,String kind){
+        if(kind.equals("circuit")){
+            int[][] nodes={{385,115},{510,115},{635,115},{385,235},{510,235},{635,235}};
+            for(int[] edge:new int[][]{{0,1},{1,2},{2,5},{5,4},{4,3},{3,0},{1,4}})line(g,nodes[edge[0]][0]+15,nodes[edge[0]][1]+10,nodes[edge[1]][0]+15,nodes[edge[1]][1]+10,0xff4faecd);
+            for(int i=0;i<nodes.length;i++){g.fill(nodes[i][0],nodes[i][1],nodes[i][0]+35,nodes[i][1]+25,0xff365669);g.drawString(font,new String[]{"TX","SUM","RX","DLY","COR","RX"}[i],nodes[i][0]+3,nodes[i][1]+8,0xffd5eef5,false);}return;
+        }
+        if(kind.equals("cable")){
+            g.fill(380,170,680,185,0xff31bfc6);g.fill(500,170,530,185,0xffba5c4d);g.drawString(font,"L = 0.25 m",402,121,0xff9fe5c4,false);g.drawString(font,"damage = 20% → loss + noise",378,236,0xffffc783,false);return;
+        }
+        if(kind.equals("correlation")){
+            line(g,380,250,685,250,0xff6c92a8);line(g,530,100,530,265,0xff3b5d73);
+            int old=250;for(int x=0;x<300;x++){int y=250-(int)(130*Math.exp(-Math.pow((x-190)/35.0,2)));if(x>0)line(g,380+x-1,old,380+x,y,0xff73e4b1);old=y;}
+            line(g,570,105,570,250,0xfff9c15a);g.drawString(font,"R(τ)",388,100,0xffd5eef5,false);g.drawString(font,"0      +τpeak",516,278,0xfff9c15a,false);return;
+        }
+        if(kind.equals("gate")){
+            line(g,380,245,530,245,0xff73e4b1);line(g,530,245,530,130,0xff73e4b1);line(g,530,130,680,130,0xff73e4b1);g.drawString(font,"t = T",515,270,0xfff9c15a,false);return;
+        }
+        if(kind.equals("math")){
+            g.drawString(font,"A + B → SUM → ∫dt",390,112,0xfff9c15a,false);line(g,385,250,680,250,0xff53738a);line(g,385,250,680,140,0xff73e4b1);g.drawString(font,"constant input → ramp",388,278,0xffd5eef5,false);return;
+        }
+        if(kind.equals("achievements")){
+            var icons=new net.minecraft.world.item.Item[]{PRSCraft.HANDBOOK.get(),PRSCraft.WRENCH.get(),PRSCraft.CORRELATOR.get().asItem()};for(int i=0;i<3;i++){g.pose().pushPose();g.pose().translate(395+i*110,150,0);g.pose().scale(3,3,1);g.renderItem(new ItemStack(icons[i]),0,0);g.pose().popPose();}g.drawString(font,"READ → CALIBRATE → CORRELATE",377,240,0xfff9c15a,false);return;
+        }
         if(kind.equals("chain")){
             var items=new net.minecraft.world.item.Item[]{PRSCraft.TRANSMITTER.get().asItem(),PRSCraft.AMPLIFIER.get().asItem(),PRSCraft.FILTER.get().asItem(),PRSCraft.MODULATOR.get().asItem(),PRSCraft.TRANSMITTER.get().asItem()};
             String[] labels={"TX","AMP","FILTER","MOD","RX"};

@@ -39,6 +39,36 @@
         "prscraft:profile": 6
       },
       "model": "prscraft:item/template_6"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 7
+      },
+      "model": "prscraft:item/template_7"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 8
+      },
+      "model": "prscraft:item/template_8"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 9
+      },
+      "model": "prscraft:item/template_9"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 10
+      },
+      "model": "prscraft:item/template_10"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 11
+      },
+      "model": "prscraft:item/template_11"
     }
   ]
 }

@@ -1,0 +1,34 @@
+{
+  "display": {
+    "icon": {
+      "id": "prscraft:handbook"
+    },
+    "title": {
+      "translate": "advancements.prscraft.root.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.root.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "background": "minecraft:textures/gui/advancements/backgrounds/stone.png"
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": "prscraft:handbook"
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

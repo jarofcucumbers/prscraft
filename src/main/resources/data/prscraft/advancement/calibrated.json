@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "id": "prscraft:cable_wrench"
+    },
+    "title": {
+      "translate": "advancements.prscraft.calibrated.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.calibrated.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ],
+  "parent": "prscraft:root"
+}

@@ -7,7 +7,7 @@ public abstract class PanelScreen extends Screen {
     protected final int panelWidth,panelHeight;protected float scale;private int ox,oy;
     protected PanelScreen(Component title,int w,int h){super(title);panelWidth=w;panelHeight=h;}
     protected Component tr(String key){return Component.translatable("screen.prscraft."+key);}
-    protected Button button(int x,int y,int w,Component label,Button.OnPress press){return addRenderableWidget(Button.builder(label,press).bounds(x,y,w,20).build());}
+    protected Button button(int x,int y,int w,Component label,Button.OnPress press){return addRenderableWidget(new ScaledButton(x,y,w,label,press));}
     protected EditBox field(int x,int y,int w,String value,int limit,String key){var f=new EditBox(font,x,y,w,20,tr(key));f.setMaxLength(limit);f.setValue(value);return addRenderableWidget(f);}
     protected static double number(EditBox box){return Double.parseDouble(box.getValue().replace(',','.'));}
     protected static String fmt(double value){return String.format(java.util.Locale.ROOT,"%.5g",value);}

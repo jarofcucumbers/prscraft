@@ -56,7 +56,7 @@ public final class RadioScreen extends Screen {
         box.setResponder(v -> serverError=""); return addRenderableWidget(box);
     }
     private Button button(int x,int y,int w,Component label,Button.OnPress action) {
-        return addRenderableWidget(Button.builder(label,action).bounds(x,y,w,20).build());
+        return addRenderableWidget(new ScaledButton(x,y,w,label,action));
     }
     private Component toggle(String key, boolean value) { return Component.literal(tr(key).getString()+": "+tr(value?"on":"off").getString()); }
     @Override protected void init() {
@@ -176,7 +176,7 @@ public final class RadioScreen extends Screen {
         g.fill(left,top,left+w,top+h,0xff0a111c);
         for(int i=0;i<=4;i++){int x=left+i*w/4;g.fill(x,top,x+1,top+h,0xff233448);int y=top+i*h/4;g.fill(left,y,left+w,y+1,0xff233448);}
         boolean rx=!transmit;
-        if(config==null || rx&&!snapshot.getBoolean("connected")){text(g,rx?"no_link":"invalid",left,top+30,0xffff6b81);return;}
+        if(config==null || rx&&!snapshot.getBoolean("connected")){if(rx&&!snapshot.getString("fault").isEmpty())g.drawString(font,Component.translatable("fault.prscraft."+snapshot.getString("fault")),left,top+30,0xffff6b81,false);else text(g,rx?"no_link":"invalid",left,top+30,0xffff6b81);return;}
         RadioSettings source=rx?RadioSettings.read(snapshot.getCompound("source")):config;
         double span=rx?snapshot.getDouble("span"):SignalChain.span(source,java.util.List.of());
         double[] original=rx?SignalChain.unpack(snapshot.getIntArray("original")):SignalChain.generate(source,span,512,true);
@@ -198,7 +198,7 @@ public final class RadioScreen extends Screen {
         if(showSample)series(g,left,top,w,h,span,range,0xfff9ca24,sampled);
         if(showQuant)series(g,left,top,w,h,span,range,0xffff6bce,emitted);
         if(showRx&&rx)series(g,left,top,w,h,span,range,0xff44ef94,received);
-        String state=rx?"RX · "+snapshot.getString("medium")+" · "+snapshot.getInt("metres")+" m · loss "+fmt(snapshot.getDouble("loss"))+" dB · noise σ "+fmt(snapshot.getDouble("sigma")):"TX · "+source.signalMode()+" · "+(enabled?"ON":"OFF");
+        String state=rx?"RX · "+snapshot.getString("medium")+" · "+fmt(snapshot.getDouble("metres"))+" m · loss "+fmt(snapshot.getDouble("loss"))+" dB · noise σ "+fmt(snapshot.getDouble("sigma")):"TX · "+source.signalMode()+" · "+(enabled?"ON":"OFF");
         g.drawString(font,font.plainSubstrByWidth(state,690),14,432,0xffb9d9e8,false);
         String description=source.signalMode().equals("bits")?(source.lab().randomBits()?"Bernoulli P1="+source.lab().probabilityOne():source.bits())+" @ "+source.bitRate()+" bit/s":source.signalMode().equals("discrete")?source.lab().samples():source.expression();
         if(rx&&!snapshot.getString("decoded").isEmpty())description+=" · BPSK: "+snapshot.getString("decoded");

@@ -1,0 +1,27 @@
+{
+  "display": {
+    "icon": {
+      "id": "prscraft:line_analyzer"
+    },
+    "title": {
+      "translate": "advancements.prscraft.survey.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.survey.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ],
+  "parent": "prscraft:root"
+}

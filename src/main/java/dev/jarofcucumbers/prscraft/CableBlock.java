@@ -8,7 +8,7 @@ import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.*;
 
 /** Six-way cable with matching visual and collision arms. */
-public final class CableBlock extends PipeBlock {
+public final class CableBlock extends PipeBlock implements EntityBlock {
     public final SignalBudget.Medium medium;
     public CableBlock(SignalBudget.Medium medium, Properties properties) {
         super(0.125f, properties); this.medium = medium;
@@ -16,6 +16,7 @@ public final class CableBlock extends PipeBlock {
         for (var property : PROPERTY_BY_DIRECTION.values()) state = state.setValue(property, false);
         registerDefaultState(state);
     }
+    @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos,BlockState state){return new CableBlockEntity(pos,state);}
     @Override protected MapCodec<? extends PipeBlock> codec() { return simpleCodec(p -> new CableBlock(medium, p)); }
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         PROPERTY_BY_DIRECTION.values().forEach(builder::add);

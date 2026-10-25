@@ -11,8 +11,12 @@ public final class RadioClient {
         Minecraft minecraft = Minecraft.getInstance();
         if (packet.open()) {
             String kind=packet.data().getString("kind");
-            minecraft.setScreen(kind.equals("analyzer")?new AnalyzerScreen(packet.pos(),packet.data()):kind.equals("radio")||kind.equals("bit_generator")?new RadioScreen(packet.pos(),packet.data()):new ProcessorScreen(packet.pos(),packet.data()));
+            String displayKind=packet.data().getBoolean("recorded")?packet.data().getString("captureKind"):kind;
+            boolean dsp=java.util.Set.of("adder","integrator","correlator","time_gate","delay_line").contains(displayKind);
+            minecraft.setScreen(dsp?new DspScreen(packet.pos(),packet.data()):kind.equals("cable")?new CableScreen(packet.pos(),packet.data()):kind.equals("analyzer")?new AnalyzerScreen(packet.pos(),packet.data()):kind.equals("radio")||kind.equals("bit_generator")?new RadioScreen(packet.pos(),packet.data()):new ProcessorScreen(packet.pos(),packet.data()));
         }
+        else if(minecraft.screen instanceof CableScreen cable&&cable.pos().equals(packet.pos()))cable.receive(packet.data());
+        else if(minecraft.screen instanceof DspScreen dsp&&dsp.pos().equals(packet.pos()))dsp.receive(packet.data());
         else if(minecraft.screen instanceof LabScreen lab&&lab.pos().equals(packet.pos()))lab.receive(packet.data());
         else if(minecraft.screen instanceof AnalyzerScreen analyzer&&analyzer.pos().equals(packet.pos()))analyzer.receive(packet.data());
         else if(minecraft.screen instanceof ProcessorScreen processor && processor.pos().equals(packet.pos()))processor.receive(packet.data());
@@ -35,6 +39,7 @@ public final class RadioClient {
     public static void exportSpectrum(net.minecraft.nbt.CompoundTag data,String stage){
         var minecraft=Minecraft.getInstance();
         try{
+            if(!stage.equals("sourceOutput")&&data.contains("units")&&!data.getString("units").equals("u"))throw new IllegalArgumentException("units");
             int[] samples=data.getIntArray(stage);if(samples.length!=512)throw new IllegalArgumentException("capture");
             var spectrum=dev.jarofcucumbers.prscraft.Spectrum.analyze(dev.jarofcucumbers.prscraft.SignalChain.unpack(samples),data.getDouble("span"));
             var folder=minecraft.gameDirectory.toPath().resolve("prscraft/recordings");java.nio.file.Files.createDirectories(folder);

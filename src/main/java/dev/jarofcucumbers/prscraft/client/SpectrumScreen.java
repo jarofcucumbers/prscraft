@@ -6,13 +6,16 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.nbt.CompoundTag;
 public final class SpectrumScreen extends PanelScreen {
     private final Screen parent;private final CompoundTag snapshot;private int measure,stage;private boolean logarithmic=true;
+    private net.minecraft.client.gui.components.Button exportButton;
     private static final String[] STAGES={"sourceOutput","emitted","received"};
     public SpectrumScreen(Screen parent,CompoundTag snapshot){super(Component.translatable("screen.prscraft.spectrum"),720,440);this.parent=parent;this.snapshot=snapshot;stage=snapshot.getBoolean("connected")?2:0;}
     @Override protected void build(){button(14,39,210,tr("spectrum_psd"),b->{measure=(measure+1)%3;b.setMessage(tr(measure==0?"spectrum_psd":measure==1?"spectrum_esd":"spectrum_amplitude"));});
         button(238,39,210,Component.literal(STAGES[stage]),b->{stage=(stage+1)%3;b.setMessage(Component.literal(STAGES[stage]));});
-        button(462,39,244,Component.literal("dB / linear"),b->logarithmic=!logarithmic);button(14,405,150,tr("back"),b->onClose());button(176,405,190,Component.literal("CSV · spectrum"),b->RadioClient.exportSpectrum(snapshot,STAGES[stage]));}
+        button(462,39,244,Component.literal("dB / linear"),b->logarithmic=!logarithmic);button(14,405,150,tr("back"),b->onClose());exportButton=button(176,405,190,Component.literal("CSV · spectrum"),b->RadioClient.exportSpectrum(snapshot,STAGES[stage]));}
     @Override public void onClose(){minecraft.setScreen(parent);}
     @Override protected void draw(GuiGraphics g){
+        exportButton.active=snapshot.getIntArray(STAGES[stage]).length==512&&(stage==0||!snapshot.contains("units")||snapshot.getString("units").equals("u"));
+        if(stage!=0&&snapshot.contains("units")&&!snapshot.getString("units").equals("u")){label(g,"non_power_units",14,100);g.drawString(font,"units="+snapshot.getString("units"),14,123,0xffc3d6e4,false);return;}
         int[] data=snapshot.getIntArray(STAGES[stage]);if(data.length!=512){label(g,"no_capture",14,90);return;}
         Spectrum.Result spectrum=Spectrum.analyze(SignalChain.unpack(data),snapshot.getDouble("span"));
         double[] values=measure==0?spectrum.psd():measure==1?spectrum.esd():spectrum.amplitude();

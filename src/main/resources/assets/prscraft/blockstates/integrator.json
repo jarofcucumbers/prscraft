@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "prscraft:block/integrator",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "prscraft:block/integrator",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "prscraft:block/integrator",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "prscraft:block/integrator",
+      "y": 270
+    }
+  }
+}

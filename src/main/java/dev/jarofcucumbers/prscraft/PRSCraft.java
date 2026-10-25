@@ -23,9 +23,16 @@ public final class PRSCraft {
     public static final DeferredBlock<BitGeneratorBlock> BIT_GENERATOR=BLOCKS.register("bit_generator",()->new BitGeneratorBlock(BlockBehaviour.Properties.of().strength(3)));
     public static final DeferredItem<HandbookItem> HANDBOOK=ITEMS.register("handbook",()->new HandbookItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<TemplateItem> TEMPLATE=ITEMS.register("signal_template",()->new TemplateItem(new Item.Properties().stacksTo(1)));
+    public static final java.util.List<DeferredBlock<CableBlock>> CABLES=new java.util.ArrayList<>();
+    public static final DeferredBlock<ProcessorBlock> ADDER=BLOCKS.register("adder",()->new ProcessorBlock("adder",BlockBehaviour.Properties.of().strength(3)));
+    public static final DeferredBlock<ProcessorBlock> INTEGRATOR=BLOCKS.register("integrator",()->new ProcessorBlock("integrator",BlockBehaviour.Properties.of().strength(3)));
+    public static final DeferredBlock<ProcessorBlock> CORRELATOR=BLOCKS.register("correlator",()->new ProcessorBlock("correlator",BlockBehaviour.Properties.of().strength(3)));
+    public static final DeferredBlock<ProcessorBlock> TIME_GATE=BLOCKS.register("time_gate",()->new ProcessorBlock("time_gate",BlockBehaviour.Properties.of().strength(3)));
+    public static final DeferredBlock<ProcessorBlock> DELAY=BLOCKS.register("delay_line",()->new ProcessorBlock("delay_line",BlockBehaviour.Properties.of().strength(3)));
+    public static final DeferredItem<CableWrenchItem> WRENCH=ITEMS.register("cable_wrench",()->new CableWrenchItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<Item> DATA_CARD=ITEMS.registerSimpleItem("data_card",new Item.Properties().stacksTo(1));
     static {
-        ITEMS.registerSimpleBlockItem(TRANSMITTER);ITEMS.registerSimpleBlockItem(BIT_GENERATOR); ITEMS.registerSimpleBlockItem(AMPLIFIER); ITEMS.registerSimpleBlockItem(FILTER); ITEMS.registerSimpleBlockItem(MODULATOR);
+        ITEMS.registerSimpleBlockItem(ADDER);ITEMS.registerSimpleBlockItem(INTEGRATOR);ITEMS.registerSimpleBlockItem(CORRELATOR);ITEMS.registerSimpleBlockItem(TIME_GATE);ITEMS.registerSimpleBlockItem(DELAY);ITEMS.registerSimpleBlockItem(TRANSMITTER);ITEMS.registerSimpleBlockItem(BIT_GENERATOR); ITEMS.registerSimpleBlockItem(AMPLIFIER); ITEMS.registerSimpleBlockItem(FILTER); ITEMS.registerSimpleBlockItem(MODULATOR);
         for (SignalBudget.Medium medium : SignalBudget.Medium.values()) {
             String name = medium.name().toLowerCase(java.util.Locale.ROOT) + "_port";
             var block = BLOCKS.register(name, () -> new PortBlock(medium,
@@ -33,12 +40,13 @@ public final class PRSCraft {
             ITEMS.registerSimpleBlockItem(block);
             var cable = BLOCKS.register(medium.name().toLowerCase(java.util.Locale.ROOT) + "_cable",
                 () -> new CableBlock(medium, BlockBehaviour.Properties.of().strength(1).noOcclusion()));
-            ITEMS.registerSimpleBlockItem(cable);
+            CABLES.add(cable);ITEMS.registerSimpleBlockItem(cable);
         }
     }
     public static final DeferredRegister<BlockEntityType<?>> ENTITIES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, ID);
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RadioBlockEntity>> RADIO_ENTITY =
-        ENTITIES.register("radio", () -> BlockEntityType.Builder.of(RadioBlockEntity::new, TRANSMITTER.get(),AMPLIFIER.get(),FILTER.get(),MODULATOR.get(),BIT_GENERATOR.get()).build(null));
+        ENTITIES.register("radio", () -> BlockEntityType.Builder.of(RadioBlockEntity::new, TRANSMITTER.get(),AMPLIFIER.get(),FILTER.get(),MODULATOR.get(),BIT_GENERATOR.get(),ADDER.get(),INTEGRATOR.get(),CORRELATOR.get(),TIME_GATE.get(),DELAY.get()).build(null));
+    public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<CableBlockEntity>> CABLE_ENTITY=ENTITIES.register("cable",()->BlockEntityType.Builder.of(CableBlockEntity::new,CABLES.stream().map(DeferredBlock::get).toArray(Block[]::new)).build(null));
     public static final DeferredRegister<net.minecraft.world.inventory.MenuType<?>> MENUS=DeferredRegister.create(Registries.MENU,ID);
     public static final DeferredHolder<net.minecraft.world.inventory.MenuType<?>,net.minecraft.world.inventory.MenuType<PresetMenu>> MEDIA_MENU=
         MENUS.register("media",()->net.neoforged.neoforge.common.extensions.IMenuTypeExtension.create((id,inventory,buf)->

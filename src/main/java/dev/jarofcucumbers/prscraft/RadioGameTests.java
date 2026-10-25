@@ -26,20 +26,22 @@ public final class RadioGameTests {
     @GameTest(template="empty",timeoutTicks=20)
     public static void cableTurnAndBrokenLink(GameTestHelper h) {
         setup(h);
-        var link=CableNetwork.receive(h.getLevel(),h.absolutePos(RX),receiver(100));
-        h.assertTrue(link!=null,"TX must be reachable around a cable corner");
-        h.assertTrue(link.metres()==5,"Shortest route must be 5 metres");
-        h.assertTrue(Math.abs(link.lossDb()-3)<1e-9,"Two coax connectors and 5 metres must lose 3 dB");
+        var link=RadioCapture.capture(h.getLevel(),h.absolutePos(RX));
+        h.assertTrue(link.getBoolean("connected"),"TX must be reachable around a cable corner");
+        h.assertTrue(link.getDouble("metres")==5,"Shortest route must be 5 metres");
+        h.assertTrue(Math.abs(link.getDouble("loss")-3)<1e-9,"Two coax connectors and 5 metres must lose 3 dB");
         h.setBlock(CORNER,Blocks.AIR);
-        h.assertTrue(CableNetwork.receive(h.getLevel(),h.absolutePos(RX),receiver(100))==null,"Broken cable must disconnect RX");
+        h.assertTrue(!RadioCapture.capture(h.getLevel(),h.absolutePos(RX)).getBoolean("connected"),"Broken cable must disconnect RX");
         h.succeed();
     }
     @GameTest(template="empty",timeoutTicks=20)
     public static void incompatibleCableAndCarrier(GameTestHelper h) {
         setup(h);
-        h.assertTrue(CableNetwork.receive(h.getLevel(),h.absolutePos(RX),receiver(125))==null,"Different carrier must not connect");
+        ((RadioBlockEntity)h.getBlockEntity(RX)).configure(receiver(125));
+        h.assertTrue(!RadioCapture.capture(h.getLevel(),h.absolutePos(RX)).getBoolean("connected"),"Different carrier must not connect");
+        ((RadioBlockEntity)h.getBlockEntity(RX)).configure(receiver(100));
         h.setBlock(CORNER,block("fiber_cable"));
-        h.assertTrue(CableNetwork.receive(h.getLevel(),h.absolutePos(RX),receiver(100))==null,"Mixed media must not connect");
+        h.assertTrue(!RadioCapture.capture(h.getLevel(),h.absolutePos(RX)).getBoolean("connected"),"Mixed media must not connect");
         h.succeed();
     }
     @GameTest(template="empty",timeoutTicks=20)
@@ -81,12 +83,12 @@ public final class RadioGameTests {
         ((RadioBlockEntity)h.getBlockEntity(rx)).configure(receiver(100));
         for(String kind:java.util.List.of("amplifier","frequency_filter","modulator")){
             h.setBlock(device,block(kind).defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.EAST));
-            var link=CableNetwork.receive(h.getLevel(),h.absolutePos(rx),receiver(100));
-            h.assertTrue(link!=null&&link.processors().size()==1&&link.processors().getFirst().kind().equals(kind),"Route must include "+kind);
+            var link=RadioCapture.capture(h.getLevel(),h.absolutePos(rx));
+            h.assertTrue(link.getBoolean("connected")&&link.getString("pipeline").contains(kind),"Route must include "+kind);
             var monitor=RadioCapture.capture(h.getLevel(),h.absolutePos(device));
             h.assertTrue(monitor.getBoolean("connected")&&monitor.getIntArray("emitted").length==512,"Processor monitor must show input and processed output");
             h.setBlock(device,block(kind).defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.WEST));
-            h.assertTrue(CableNetwork.receive(h.getLevel(),h.absolutePos(rx),receiver(100))==null,"Reversed processor must break route");
+            h.assertTrue(!RadioCapture.capture(h.getLevel(),h.absolutePos(rx)).getBoolean("connected"),"Reversed processor must break route");
         }
         h.succeed();
     }
@@ -151,7 +153,7 @@ public final class RadioGameTests {
         var noise=new LabSettings(true,false,.5,-1,1,"0,1",42,0,.5,.25,true,"relative",.1);
         rx.configure(rx.settings().withLab(noise));var data=RadioCapture.capture(h.getLevel(),h.absolutePos(RX));
         h.assertTrue(data.getBoolean("connected"),"Dedicated generator must be a routable TX source");
-        double[] sent=SignalChain.unpack(data.getIntArray("emitted")),received=SignalChain.unpack(data.getIntArray("received"));
+        double[] sent=SignalChain.unpack(data.getIntArray("sourceOutput")),received=SignalChain.unpack(data.getIntArray("received"));
         double gain=Transmission.gain(generator.settings().powerDbm(),data.getDouble("loss")),mean=0,squares=0;
         for(int i=0;i<received.length;i++){double n=received[i]-sent[i]*gain;mean+=n;squares+=n*n;}
         mean/=received.length;double variance=squares/received.length-mean*mean;
@@ -171,6 +173,62 @@ public final class RadioGameTests {
         h.assertTrue(report.getList("devices",10).size()==2,"Local segment must list its two attached devices");
         h.assertTrue(beforeTx.equals(tx.saveWithFullMetadata(h.getLevel().registryAccess()))&&beforeRx.equals(rx.saveWithFullMetadata(h.getLevel().registryAccess())),"Analyzer must not change settings, media or graph preferences");
         h.succeed();
+    }
+
+    private static RadioSettings cleanSource(String expression){return new RadioSettings(expression,100,16,true,true,false,0,100,20,true,.5,"analog","10110010",10);}
+    private static RadioSettings cleanRx(){return new RadioSettings("",100,16,false,true,false,0,100,20,true,.5);}
+    private static final BlockPos PA=new BlockPos(4,1,6),PB=new BlockPos(2,1,4),DSP=new BlockPos(4,1,4),PR=new BlockPos(4,1,2);
+    private static void pairSetup(GameTestHelper h,String kind){
+        h.setBlock(PA,PRSCraft.TRANSMITTER.get());h.setBlock(PB,PRSCraft.TRANSMITTER.get());h.setBlock(PR,PRSCraft.TRANSMITTER.get());
+        h.setBlock(DSP,block(kind).defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.NORTH));
+        for(BlockPos port:java.util.List.of(new BlockPos(4,1,5),new BlockPos(3,1,4),new BlockPos(4,1,3)))h.setBlock(port,block("coaxial_port"));
+        ((RadioBlockEntity)h.getBlockEntity(PA)).configure(cleanSource("sin(10)"));((RadioBlockEntity)h.getBlockEntity(PB)).configure(cleanSource("cos(10)"));((RadioBlockEntity)h.getBlockEntity(PR)).configure(cleanRx());
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void adderReallyCombinesTwoPhysicalInputs(GameTestHelper h){
+        pairSetup(h,"adder");var capture=RadioCapture.capture(h.getLevel(),h.absolutePos(PR));h.assertTrue(capture.getBoolean("connected"),"Two-source sum must reach RX");
+        var y=SignalChain.unpack(capture.getIntArray("received"));double span=capture.getDouble("span"),gain=Math.pow(10,-4.8/20);
+        for(int i=0;i<512;i++){double t=span*i/512;double expected=(Math.sin(2*Math.PI*10*t)+Math.cos(2*Math.PI*10*t))*gain;h.assertTrue(Math.abs(y[i]-expected)<1e-6,"Adder must use both separately routed, attenuated sources");}
+        h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void analyzerCrossesActiveDevicesAndCountsEveryPort(GameTestHelper h){
+        pairSetup(h,"adder");var report=AnalyzerService.scan(h.getLevel(),h.absolutePos(new BlockPos(4,1,5)),h.absolutePos(PR));
+        h.assertTrue(report.getInt("deviceCount")==4&&report.getInt("ports")==3,"Analyzer must include all four devices and three ports across the active adder");
+        h.assertTrue(report.getList("connections",10).size()==3,"Circuit map must include all three passive buses");
+        h.assertTrue(report.getCompound("capture").getBoolean("connected"),"Far-side RX must be selectable from the first input port");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void cableLengthDamageAndReloadAffectTheActualChannel(GameTestHelper h){
+        setup(h);RadioBlockEntity rx=h.getBlockEntity(RX);rx.configure(cleanRx());RadioBlockEntity tx=h.getBlockEntity(TX);tx.configure(cleanSource("sin(10)"));
+        CableBlockEntity cable=h.getBlockEntity(new BlockPos(3,1,1));cable.configure(new CableSettings(.25,0));
+        var clean=RadioCapture.capture(h.getLevel(),h.absolutePos(RX));h.assertTrue(Math.abs(clean.getDouble("metres")-4.25)<1e-9,"Fractional cable length must replace one default metre");
+        cable.configure(new CableSettings(.25,.5));var damaged=RadioCapture.capture(h.getLevel(),h.absolutePos(RX));
+        h.assertTrue(damaged.getDouble("loss")>clean.getDouble("loss")&&damaged.getDouble("cableVariance")>0,"Damage must add both loss and noise");
+        double[] original=SignalChain.unpack(damaged.getIntArray("sourceOutput")),received=SignalChain.unpack(damaged.getIntArray("received"));double gain=Math.pow(10,-damaged.getDouble("loss")/20),squares=0;
+        for(int i=0;i<512;i++){double noise=received[i]-original[i]*gain;squares+=noise*noise;}
+        h.assertTrue(squares/512>1e-6,"Damage noise must actually reach waveform samples");
+        var restored=new CableBlockEntity(cable.getBlockPos(),cable.getBlockState());restored.loadWithComponents(cable.saveWithFullMetadata(h.getLevel().registryAccess()),h.getLevel().registryAccess());
+        h.assertTrue(restored.settings().equals(cable.settings()),"Cable length and damage must survive reload");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void correlationFindsTheExtraDelayBlock(GameTestHelper h){
+        pairSetup(h,"correlator");var pattern=new RadioSettings("sin(10)",100,16,true,true,false,0,100,20,true,.5,"bits","10110010",10);
+        ((RadioBlockEntity)h.getBlockEntity(PA)).configure(pattern);
+        h.setBlock(PB,PRSCraft.DELAY.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.EAST));
+        var source=new BlockPos(0,1,4);h.setBlock(source,PRSCraft.TRANSMITTER.get());((RadioBlockEntity)h.getBlockEntity(source)).configure(pattern);h.setBlock(new BlockPos(1,1,4),block("coaxial_port"));
+        RadioBlockEntity delay=h.getBlockEntity(PB);var d=DspSettings.DEFAULT;delay.configureDsp(new DspSettings(d.endSeconds(),d.gateSeconds(),d.gateWidth(),d.gateHold(),.02,.1,true,false,1,1));
+        var result=RadioCapture.capture(h.getLevel(),h.absolutePos(DSP));h.assertTrue(result.getBoolean("connected")&&result.getIntArray("correlation").length==512,"Correlator needs two real inputs");
+        h.assertTrue(Math.abs(result.getDouble("peakLag")-.02)<.003,"Correlation must recover the known 20 ms delay");h.assertTrue(result.getDouble("peakValue")>.9,"Delayed pattern should correlate strongly");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void activeFeedbackFailsWithoutHangingAndAdvancementsExist(GameTestHelper h){
+        var a=new BlockPos(2,1,2);var b=new BlockPos(2,1,4);
+        h.setBlock(a,PRSCraft.AMPLIFIER.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.EAST));h.setBlock(b,PRSCraft.AMPLIFIER.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.WEST));
+        for(BlockPos port:java.util.List.of(new BlockPos(1,1,2),new BlockPos(1,1,4),new BlockPos(3,1,2),new BlockPos(3,1,4)))h.setBlock(port,block("coaxial_port"));
+        h.setBlock(new BlockPos(1,1,3),block("coaxial_cable"));h.setBlock(new BlockPos(3,1,3),block("coaxial_cable"));
+        var capture=RadioCapture.capture(h.getLevel(),h.absolutePos(a));h.assertTrue(!capture.getBoolean("connected")&&capture.getString("fault").equals("feedback"),"Unsupported feedback must report an explicit fault");
+        for(String id:Milestones.IDS)h.assertTrue(h.getLevel().getServer().getAdvancements().get(ResourceLocation.fromNamespaceAndPath(PRSCraft.ID,id))!=null,"Missing advancement: "+id);h.succeed();
     }
 
 }
