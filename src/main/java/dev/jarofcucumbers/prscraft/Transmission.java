@@ -10,7 +10,7 @@ public final class Transmission {
     public static double gain(double powerDbm,double lossDb) { return Math.pow(10,(powerDbm-20-lossDb)/20); }
     public static double rms(RadioSettings receiver,RadioSettings source,double interferenceRms) {
         return Math.hypot(receiver.noiseRms(),receiver.thermal()
-            ? Math.hypot(SignalProgram.thermalRms(source.sampleHz()/2),interferenceRms) : 0);
+            ? Math.hypot(SignalProgram.thermalRms(source.signalMode().equals("bits")?source.bitRate():source.signalMode().equals("analog")?SignalProgram.parse(source.expression()).maxHz():source.sampleHz()/2),interferenceRms) : 0);
     }
     public static double received(SignalProgram signal,RadioSettings source,double seconds,double gain,double noiseRms,long seed) {
         return signal.digital(seconds,source.sampleHz(),source.levels(),source.secondKind(),source.duty())*gain

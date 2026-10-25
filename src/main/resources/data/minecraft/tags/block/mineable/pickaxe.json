@@ -7,6 +7,9 @@
     "prscraft:metallic_port",
     "prscraft:coaxial_cable",
     "prscraft:fiber_cable",
-    "prscraft:metallic_cable"
+    "prscraft:metallic_cable",
+    "prscraft:amplifier",
+    "prscraft:frequency_filter",
+    "prscraft:modulator"
   ]
 }

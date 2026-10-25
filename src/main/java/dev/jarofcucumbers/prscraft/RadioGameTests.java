@@ -72,4 +72,59 @@ public final class RadioGameTests {
         h.succeed();
     }
 
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void directionalProcessorsAreOnTheActualRoute(GameTestHelper h){
+        var tx=new BlockPos(1,1,1);var device=new BlockPos(3,1,1);var rx=new BlockPos(7,1,1);
+        h.setBlock(tx,PRSCraft.TRANSMITTER.get());h.setBlock(rx,PRSCraft.TRANSMITTER.get());
+        h.setBlock(new BlockPos(2,1,1),block("coaxial_port"));h.setBlock(new BlockPos(4,1,1),block("coaxial_port"));
+        h.setBlock(new BlockPos(5,1,1),block("coaxial_cable"));h.setBlock(new BlockPos(6,1,1),block("coaxial_port"));
+        ((RadioBlockEntity)h.getBlockEntity(rx)).configure(receiver(100));
+        for(String kind:java.util.List.of("amplifier","frequency_filter","modulator")){
+            h.setBlock(device,block(kind).defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.EAST));
+            var link=CableNetwork.receive(h.getLevel(),h.absolutePos(rx),receiver(100));
+            h.assertTrue(link!=null&&link.processors().size()==1&&link.processors().getFirst().kind().equals(kind),"Route must include "+kind);
+            var monitor=RadioCapture.capture(h.getLevel(),h.absolutePos(device));
+            h.assertTrue(monitor.getBoolean("connected")&&monitor.getIntArray("emitted").length==512,"Processor monitor must show input and processed output");
+            h.setBlock(device,block(kind).defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.WEST));
+            h.assertTrue(CableNetwork.receive(h.getLevel(),h.absolutePos(rx),receiver(100))==null,"Reversed processor must break route");
+        }
+        h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void paperPresetRestoresSettingsAndGraphAndCapturePersists(GameTestHelper h){
+        setup(h);RadioBlockEntity radio=h.getBlockEntity(RX);
+        radio.graph(5,17);var original=radio.settings();
+        var player=h.makeMockPlayer(net.minecraft.world.level.GameType.CREATIVE);
+        var center=net.minecraft.world.phys.Vec3.atCenterOf(h.absolutePos(RX));player.setPos(center.x,center.y,center.z);
+        var menu=new PresetMenu(1,player.getInventory(),radio);
+        radio.media.setStackInSlot(0,new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.PAPER));
+        h.assertTrue(menu.clickMenuButton(player,0),"Paper must become a saved template");
+        var template=radio.media.extractItem(0,1,false);radio.configure(receiver(125));radio.graph(0,0);
+        radio.media.setStackInSlot(0,template);
+        h.assertTrue(radio.settings().equals(original)&&radio.graphLayers()==5&&radio.graphTerms()==17,"Inserting template must restore configuration and visual choices");
+        radio.media.setStackInSlot(1,new net.minecraft.world.item.ItemStack(PRSCraft.DATA_CARD.get()));
+        h.assertTrue(menu.clickMenuButton(player,2),"Connected RX must record a data card");
+        var tag=radio.saveWithFullMetadata(h.getLevel().registryAccess());
+        RadioBlockEntity restored=new RadioBlockEntity(h.absolutePos(RX),radio.getBlockState());restored.loadWithComponents(tag,h.getLevel().registryAccess());
+        h.assertTrue(restored.graphLayers()==5&&restored.graphTerms()==17,"Graph choices must survive reload");
+        var data=restored.media.getStackInSlot(1).get(net.minecraft.core.component.DataComponents.CUSTOM_DATA).copyTag();
+        h.assertTrue(data.getIntArray("received").length==512,"Recorded samples must survive block reload");
+        h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void bpskReceptionDecodesTheTransmittedBits(GameTestHelper h){
+        var tx=new BlockPos(1,1,1);var device=new BlockPos(3,1,1);var rx=new BlockPos(7,1,1);
+        h.setBlock(tx,PRSCraft.TRANSMITTER.get());h.setBlock(rx,PRSCraft.TRANSMITTER.get());
+        h.setBlock(new BlockPos(2,1,1),block("coaxial_port"));h.setBlock(new BlockPos(4,1,1),block("coaxial_port"));
+        h.setBlock(new BlockPos(5,1,1),block("coaxial_cable"));h.setBlock(new BlockPos(6,1,1),block("coaxial_port"));
+        h.setBlock(device,PRSCraft.MODULATOR.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.EAST));
+        ((RadioBlockEntity)h.getBlockEntity(tx)).configure(new RadioSettings("sin(10)",100,16,true,true,false,0,100,20,true,.5,"bits","10110010",10));
+        RadioBlockEntity receiver=h.getBlockEntity(rx);receiver.configure(new RadioSettings("",100,16,false,true,false,0,100,20,true,.5));
+        receiver.configureProcessor(new ProcessorSettings(0,0,1000,"bpsk",100,10,.5,true));
+        var capture=RadioCapture.capture(h.getLevel(),h.absolutePos(rx));
+        h.assertTrue(capture.getBoolean("connected"),"Modulated source must reach RX");
+        h.assertTrue(capture.getString("decoded").equals("10110010"),"Coherent decoder must recover the transmitted eight bits");
+        h.succeed();
+    }
+
 }

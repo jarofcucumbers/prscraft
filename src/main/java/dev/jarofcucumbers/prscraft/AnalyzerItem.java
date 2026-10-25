@@ -32,6 +32,10 @@ public final class AnalyzerItem extends Item {
                 var next=entry.getKey().relative(d);
                 if(!level.hasChunkAt(next)||!devices.add(next)||!(level.getBlockEntity(next) instanceof RadioBlockEntity radio))continue;
                 RadioSettings settings=radio.settings();found++;
+                if(!radio.kind().equals("radio")){
+                    player.displayClientMessage(Component.translatable("message.prscraft.processor",next.toShortString(),Component.translatable("block.prscraft."+radio.kind()),settings.enabled()?"ON":"OFF"),false);
+                    continue;
+                }
                 double loss=2*port.medium.lossDb(0,settings.carrierMHz())
                     +port.medium.lossDb(entry.getValue()+1,settings.carrierMHz())-port.medium.lossDb(0,settings.carrierMHz());
                 player.displayClientMessage(Component.translatable("message.prscraft.device",next.toShortString(),

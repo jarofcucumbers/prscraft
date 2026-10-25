@@ -11,12 +11,19 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.Locale;
 
 public final class RadioScreen extends Screen {
-    private static final int W = 720, H = 448;
+    private static final int W = 720, H = 494;
     private static final int[] COLORS = {0xff55ddee,0xffff9f43,0xffcd84f1,0xff7bed9f,0xffff6b81,0xfff9ca24,0xff70a1ff,0xffdfe4ea};
     private final BlockPos pos;
+    private final boolean recorded;
     private CompoundTag snapshot;
     private RadioSettings saved;
-    private EditBox expression, sample, levels, duty, power, carrier, noise;
+    private EditBox expression, sample, levels, duty, power, carrier, noise, bits, bitRate, oscillator;
+    private String signalMode;
+    private ProcessorSettings decoder;
+    private boolean demodulate;
+    private int sentView, viewTicks;
+    private Button stageButton,kindButton,physicalButton;
+    private final java.util.List<Button> termButtons=new java.util.ArrayList<>();
     private Button apply;
     private boolean transmit, enabled, thermal, secondKind;
     private boolean showSum = true, showSample = true, showQuant = true, showRx = true, frozen;
@@ -27,12 +34,18 @@ public final class RadioScreen extends Screen {
     private float scale;
     private int ox, oy;
     public RadioScreen(BlockPos pos, CompoundTag data) {
-        super(Component.translatable("screen.prscraft.title")); this.pos = pos; this.snapshot = data;
+        super(Component.translatable("screen.prscraft.title")); this.pos = pos; this.snapshot = data; this.recorded=data.getBoolean("recorded");
         saved = RadioSettings.read(data.getCompound("settings"));
-        transmit=saved.transmit(); enabled=saved.enabled(); thermal=saved.thermal(); secondKind=saved.secondKind();
+        signalMode=saved.signalMode();decoder=ProcessorSettings.read(data.getCompound("processor"));demodulate=decoder.demodulate();
+        int layers=data.contains("graphLayers")?data.getInt("graphLayers"):15;
+        showSum=(layers&1)!=0;showSample=(layers&2)!=0;showQuant=(layers&4)!=0;showRx=(layers&8)!=0;frozen=(layers&16)!=0;
+        int terms=data.contains("graphTerms")?data.getInt("graphTerms"):255;for(int i=0;i<8;i++)showTerm[i]=(terms&(1<<i))!=0;
+        sentView=viewCode();
+        transmit=recorded?false:saved.transmit(); if(recorded)frozen=true; enabled=saved.enabled(); thermal=saved.thermal(); secondKind=saved.secondKind();
     }
     public BlockPos pos() { return pos; }
     public void receive(CompoundTag data) {
+        if(recorded)return;
         if (!frozen || pending) snapshot = data;
         saved = RadioSettings.read(data.getCompound("settings"));
         if (pending) { serverError = data.getString("error"); pending=false; pendingTicks=0; }
@@ -56,37 +69,76 @@ public final class RadioScreen extends Screen {
         expression=field(14,43,692,ex,"expression");
         sample=field(14,88,94,sa,"sample"); levels=field(120,88,88,le,"levels"); duty=field(220,88,76,du,"duty");
         power=field(308,88,88,po,"power"); carrier=field(408,88,138,ca,"carrier"); noise=field(558,88,148,no,"noise");
-        button(14,118,90,Component.literal(transmit?"TX":"RX"),b->{transmit=!transmit;b.setMessage(Component.literal(transmit?"TX":"RX"));serverError="";});
+        button(14,118,90,Component.literal(transmit?"TX":"RX"),b->{transmit=!transmit;b.setMessage(Component.literal(transmit?"TX":"RX"));serverError="";visibility();});
         button(110,118,100,toggle("enabled",enabled),b->{enabled=!enabled;b.setMessage(toggle("enabled",enabled));serverError="";});
-        button(216,118,148,Component.literal(tr("sampling").getString()+": "+(secondKind?"II":"I")),b->{secondKind=!secondKind;b.setMessage(Component.literal(tr("sampling").getString()+": "+(secondKind?"II":"I")));serverError="";});
-        button(370,118,180,toggle("physical",thermal),b->{thermal=!thermal;b.setMessage(toggle("physical",thermal));serverError="";});
+        kindButton=button(216,118,148,Component.literal(tr("sampling").getString()+": "+(secondKind?"II":"I")),b->{secondKind=!secondKind;b.setMessage(Component.literal(tr("sampling").getString()+": "+(secondKind?"II":"I")));serverError="";});
+        physicalButton=button(370,118,180,toggle("physical",thermal),b->{thermal=!thermal;b.setMessage(toggle("physical",thermal));serverError="";});
         apply=button(556,118,150,tr("apply"),b->save());
-        button(14,170,110,toggle("sum",showSum),b->{showSum=!showSum;b.setMessage(toggle("sum",showSum));});
-        button(130,170,125,toggle("sampling",showSample),b->{showSample=!showSample;b.setMessage(toggle("sampling",showSample));});
-        button(261,170,130,toggle("quant",showQuant),b->{showQuant=!showQuant;b.setMessage(toggle("quant",showQuant));});
-        button(397,170,130,toggle("rx",showRx),b->{showRx=!showRx;b.setMessage(toggle("rx",showRx));});
-        button(533,170,173,toggle("freeze",frozen),b->{frozen=!frozen;b.setMessage(toggle("freeze",frozen));});
+        button(14,216,110,toggle("sum",showSum),b->{showSum=!showSum;b.setMessage(toggle("sum",showSum));});
+        button(130,216,125,toggle("sampling",showSample),b->{showSample=!showSample;b.setMessage(toggle("sampling",showSample));});
+        button(261,216,130,toggle("quant",showQuant),b->{showQuant=!showQuant;b.setMessage(toggle("quant",showQuant));});
+        button(397,216,130,toggle("rx",showRx),b->{showRx=!showRx;b.setMessage(toggle("rx",showRx));});
+        button(533,216,173,toggle("freeze",frozen),b->{frozen=!frozen;b.setMessage(toggle("freeze",frozen));});
+        String bitText=bits==null?saved.bits():bits.getValue();
+        String rateText=bitRate==null?input(saved.transmit()?saved.bitRate():decoder.symbolHz()):bitRate.getValue();
+        String oscText=oscillator==null?input(decoder.oscillatorHz()):oscillator.getValue();
+        bits=field(156,170,172,bitText,"bits");bits.setMaxLength(128);
+        bitRate=field(340,170,80,rateText,"bit_rate");oscillator=field(432,170,84,oscText,"oscillator");
+        stageButton=button(14,170,130,Component.empty(),b->{
+            if(transmit){String[] modes={"analog","sampled","quantized","bits"};int i=java.util.Arrays.asList(modes).indexOf(signalMode);signalMode=modes[(i+1)%modes.length];}
+            else demodulate=!demodulate;
+            serverError="";visibility();
+        });
+        button(528,170,178,tr("media"),b->{flushView();var tag=new CompoundTag();tag.putString("action","media");PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,tag));});
+        termButtons.clear();
         for(int i=0;i<8;i++) {
             final int index=i;
-            button(14+i*87,402,81,Component.literal((showTerm[i]?"● ":"○ ")+"f"+(i+1)).withColor(COLORS[i]&0xffffff),b->{showTerm[index]=!showTerm[index];b.setMessage(Component.literal((showTerm[index]?"● ":"○ ")+"f"+(index+1)).withColor(COLORS[index]&0xffffff));});
+            termButtons.add(button(14+i*87,448,81,Component.literal((showTerm[i]?"● ":"○ ")+"f"+(i+1)).withColor(COLORS[i]&0xffffff),b->{showTerm[index]=!showTerm[index];b.setMessage(Component.literal((showTerm[index]?"● ":"○ ")+"f"+(index+1)).withColor(COLORS[index]&0xffffff));}));
         }
+        visibility();
+        if(recorded)for(var renderable:renderables)if(renderable instanceof AbstractWidget widget && widget.getY()<216)widget.active=false;
     }
     private static String input(double n) { return java.math.BigDecimal.valueOf(n).stripTrailingZeros().toPlainString(); }
     private static String fmt(double n) { if(n != 0 && Math.abs(n) < 0.0001) return String.format(Locale.ROOT,"%.2e",n); return String.format(Locale.ROOT,"%.4f",n).replaceAll("0+$", "").replaceAll("\\.$", ""); }
     private static double number(EditBox box) { return Double.parseDouble(box.getValue().replace(',','.')); }
-    private RadioSettings draft() {
-        return new RadioSettings(expression.getValue(),number(sample),Integer.parseInt(levels.getValue()),transmit,enabled,thermal,
-            number(noise),number(carrier),number(power),secondKind,number(duty));
+    private void visibility(){
+        boolean waveform=transmit&&!signalMode.equals("bits");
+        boolean sampling=waveform&&!signalMode.equals("analog");
+        expression.visible=waveform;sample.visible=sampling;levels.visible=sampling&&signalMode.equals("quantized");duty.visible=sampling;
+        power.visible=transmit;noise.visible=!transmit;kindButton.visible=sampling;physicalButton.visible=!transmit;
+        bits.visible=transmit&&signalMode.equals("bits");bitRate.visible=bits.visible||!transmit&&demodulate;oscillator.visible=!transmit&&demodulate;
+        stageButton.setMessage(transmit?tr("mode_"+signalMode):tr(demodulate?"decode_bpsk":"decode_raw"));
     }
+    private RadioSettings draft() {
+        boolean waveform=transmit&&!signalMode.equals("bits"), sampling=waveform&&!signalMode.equals("analog");
+        return new RadioSettings(waveform?expression.getValue():saved.expression(),sampling?number(sample):saved.sampleHz(),
+            sampling&&signalMode.equals("quantized")?Integer.parseInt(levels.getValue()):saved.levels(),transmit,enabled,thermal,
+            transmit?saved.noiseRms():number(noise),number(carrier),transmit?number(power):saved.powerDbm(),secondKind,sampling?number(duty):saved.duty(),
+            transmit?signalMode:saved.signalMode(),transmit&&signalMode.equals("bits")?bits.getValue():saved.bits(),
+            transmit&&signalMode.equals("bits")?number(bitRate):saved.bitRate());
+    }
+    private ProcessorSettings draftDecoder(){
+        return new ProcessorSettings(decoder.gainDb(),decoder.lowHz(),decoder.highHz(),decoder.modulation(),
+            !transmit&&demodulate?number(oscillator):decoder.oscillatorHz(),!transmit&&demodulate?number(bitRate):decoder.symbolHz(),decoder.depth(),demodulate);
+    }
+    private int viewCode(){int layers=(showSum?1:0)|(showSample?2:0)|(showQuant?4:0)|(showRx?8:0)|(frozen?16:0),terms=0;
+        for(int i=0;i<8;i++)if(showTerm[i])terms|=1<<i;return (layers<<8)|terms;}
+    private void view(CompoundTag tag){int code=viewCode();tag.putInt("graphLayers",code>>8);tag.putInt("graphTerms",code&255);}
+    private void flushView(){if(!recorded&&sentView!=viewCode()){var tag=new CompoundTag();tag.putString("action","view");view(tag);PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,tag));sentView=viewCode();}}
+    @Override public void onClose(){flushView();super.onClose();}
     private void save() {
         try {
-            RadioSettings config = draft(); pending=true; pendingTicks=0; serverError="";
-            PacketDistributor.sendToServer(new RadioNetwork.Request(pos,true,config.save()));
+            RadioSettings config = draft();
+            var tag=config.save();tag.put("processor",draftDecoder().save());view(tag);
+            pending=true; pendingTicks=0; serverError="";
+            PacketDistributor.sendToServer(new RadioNetwork.Request(pos,true,tag));sentView=viewCode();
         } catch (IllegalArgumentException ignored) { /* render displays validation errors */ }
     }
     @Override public void tick() {
+        if(recorded)return;
         if (minecraft.player == null || minecraft.level == null || minecraft.player.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>64
             || !(minecraft.level.getBlockState(pos).getBlock() instanceof TransmitterBlock)) { onClose(); return; }
+        if(++viewTicks%5==0)flushView();
         if (++ticks % 20 == 0 && !pending && !frozen) PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,new CompoundTag()));
         if (pending && ++pendingTicks>=100) { pending=false; serverError="timeout"; }
     }
@@ -97,13 +149,18 @@ public final class RadioScreen extends Screen {
         g.pose().pushPose();g.pose().translate(ox,oy,0);g.pose().scale(scale,scale,1);
         int x=(int)((mx-ox)/scale),y=(int)((my-oy)/scale);
         g.fill(0,0,W,H,0xff141e2b);g.fill(0,0,W,29,0xff253b50);
-        g.drawString(font,title,14,10,0xffe8f6ff,false);
-        text(g,"expression",14,32,0xffa9c9dd);
+        g.drawString(font,recorded?tr("recorded"):title,14,10,0xffe8f6ff,false);
+        if(expression.visible)text(g,"expression",14,32,0xffa9c9dd);
+        if(!transmit){text(g,"rx_only",14,40,0xffb9d9e8);text(g,"rx_difference",14,62,0xff819ab0);}
+        if(bits.visible)text(g,"bits",156,158,0xffa9c9dd);
+        if(bitRate.visible)text(g,"bit_rate",340,158,0xffa9c9dd);
+        if(oscillator.visible)text(g,"oscillator",432,158,0xffa9c9dd);
         String[] keys={"sample","levels","duty","power","carrier","noise"};int[] xs={14,120,220,308,408,558};
-        for(int i=0;i<keys.length;i++) text(g,keys[i],xs[i],76,0xffa9c9dd);
+        EditBox[] controls={sample,levels,duty,power,carrier,noise};
+        for(int i=0;i<keys.length;i++)if(controls[i].visible)text(g,keys[i],xs[i],76,0xffa9c9dd);
         RadioSettings config=null;String error=serverError;
-        try {config=draft();} catch (NumberFormatException e) {error="number";} catch (IllegalArgumentException e) {error=e.getMessage();}
-        apply.active=config!=null&&!pending;
+        try {config=draft();draftDecoder();} catch (NumberFormatException e) {error="number";} catch (IllegalArgumentException e) {error=e.getMessage();}
+        apply.active=config!=null&&!pending&&!recorded;
         if(!error.isEmpty()) g.drawString(font,Component.translatable("error.prscraft."+error),14,145,0xffff6b81,false);
         else text(g,pending?"pending":"hint",14,145,0xffa9c9dd);
         plot(g,config);
@@ -111,48 +168,43 @@ public final class RadioScreen extends Screen {
         g.pose().popPose();
     }
     private void plot(GuiGraphics g,RadioSettings config) {
-        final int left=44,top=216,w=650,h=154;
+        final int left=44,top=262,w=650,h=154;
         g.fill(left,top,left+w,top+h,0xff0a111c);
-        for(int i=0;i<=4;i++) {int x=left+i*w/4;g.fill(x,top,x+1,top+h,0xff233448);int y=top+i*h/4;g.fill(left,y,left+w,y+1,0xff233448);}
-        SignalProgram program;
-        try {program=SignalProgram.parse(expression.getValue());} catch (IllegalArgumentException e) {text(g,"invalid",left,top+30,0xffff6b81);return;}
-        boolean receiving=config!=null&&!config.transmit();
-        boolean connected=receiving&&snapshot.getBoolean("connected")&&saved.equals(config);
-        RadioSettings source=config;
-        if(connected) {source=RadioSettings.read(snapshot.getCompound("source"));program=SignalProgram.parse(source.expression());}
-        final RadioSettings active=source;
-        final SignalProgram signal=program;
-        double span=connected?snapshot.getDouble("span"):Transmission.windowSeconds(signal,active==null?100:active.sampleHz());
-        double range=signal.range()*1.2;
-        double gain=connected?Transmission.gain(source.powerDbm(),snapshot.getDouble("loss")):1;
-        double sigma=connected?snapshot.getDouble("sigma"):0;
-        if(connected) range=Math.max(range,signal.range()*gain+3*sigma);
-        g.drawString(font,fmt(range),2,top,0xff819ab0,false);g.drawString(font,"0",28,top+h/2,0xff819ab0,false);
-        g.drawString(font,fmt(-range),2,top+h-8,0xff819ab0,false);
+        for(int i=0;i<=4;i++){int x=left+i*w/4;g.fill(x,top,x+1,top+h,0xff233448);int y=top+i*h/4;g.fill(left,y,left+w,y+1,0xff233448);}
+        boolean rx=!transmit;
+        if(config==null || rx&&!snapshot.getBoolean("connected")){text(g,rx?"no_link":"invalid",left,top+30,0xffff6b81);return;}
+        RadioSettings source=rx?RadioSettings.read(snapshot.getCompound("source")):config;
+        double span=rx?snapshot.getDouble("span"):SignalChain.span(source,java.util.List.of());
+        double[] original=rx?SignalChain.unpack(snapshot.getIntArray("original")):SignalChain.generate(source,span,512,true);
+        double[] sampled=rx?SignalChain.unpack(snapshot.getIntArray("sampled")):original.clone();
+        if(!rx&&!source.signalMode().equals("bits")&&!source.signalMode().equals("analog")){
+            var program=SignalProgram.parse(source.expression());for(int i=0;i<512;i++)sampled[i]=program.sampled(span*i/512,source.sampleHz(),source.secondKind(),source.duty());
+        }
+        double[] emitted=rx?SignalChain.unpack(snapshot.getIntArray("emitted")):source.enabled()?SignalChain.generate(source,span,512,false):new double[512];
+        double[] received=rx?SignalChain.unpack(snapshot.getIntArray("received")):new double[0];
+        double range=1;
+        for(double[] values:new double[][]{original,sampled,emitted,received})for(double value:values)range=Math.max(range,Math.abs(value)*1.15);
+        g.drawString(font,fmt(range),2,top,0xff819ab0,false);g.drawString(font,"0",28,top+h/2,0xff819ab0,false);g.drawString(font,fmt(-range),2,top+h-8,0xff819ab0,false);
         for(int i=0;i<=4;i++)g.drawString(font,fmt(span*i/4)+" s",left+i*w/4-12,top+h+3,0xff819ab0,false);
-        final double finalRange=range;
-        for(int term=0;term<signal.terms().size();term++) if(showTerm[term]) {
-            var component=signal.terms().get(term);curve(g,left,top,w,h,span,range,COLORS[term],component::at);
+        if(!source.signalMode().equals("bits")){
+            var signal=SignalProgram.parse(source.expression());
+            for(int i=0;i<signal.terms().size();i++)if(showTerm[i])curve(g,left,top,w,h,span,range,COLORS[i],signal.terms().get(i)::at);
         }
-        if(showSum)curve(g,left,top,w,h,span,range,0xffffffff,signal::at);
-        if(active!=null) {
-            if(showSample)curve(g,left,top,w,h,span,range,0xfff9ca24,t->signal.sampled(t,active.sampleHz(),active.secondKind(),active.duty()));
-            if(showQuant)curve(g,left,top,w,h,span,range,0xffff6bce,t->signal.digital(t,active.sampleHz(),active.levels(),active.secondKind(),active.duty()));
-            if(showRx&&connected) {
-                int[] received=snapshot.getIntArray("received");
-                final double duration=span;
-                if(received.length==512)curve(g,left,top,w,h,duration,finalRange,0xff44ef94,t->{
-                    int index=Math.min(received.length-1,(int)Math.round(t/duration*(received.length-1)));
-                    return Float.intBitsToFloat(received[index]);
-                });
-            }
-        }
-        String state=receiving?(connected?"RX · "+snapshot.getString("medium")+" · "+snapshot.getInt("metres")+" m · loss "+fmt(snapshot.getDouble("loss"))+" dB · noise RMS "+fmt(sigma):tr("no_link").getString()):"TX · "+(enabled?"ON":"OFF");
-        g.drawString(font,state,14,386,0xffb9d9e8,false);
-        g.drawString(font,font.plainSubstrByWidth(tr("legend").getString(),690),14,432,0xffa9c9dd,false);
-        StringBuilder frequencies=new StringBuilder();
-        for(var term:signal.terms()) {if(!frequencies.isEmpty())frequencies.append(" + ");frequencies.append(term.amplitude()).append(term.cosine()?"cos(":"sin(").append(term.hz()).append(")");}
-        g.drawString(font,font.plainSubstrByWidth(frequencies.toString(),680),14,198,0xffafc1d1,false);
+        if(showSum)series(g,left,top,w,h,span,range,0xffffffff,original);
+        if(showSample)series(g,left,top,w,h,span,range,0xfff9ca24,sampled);
+        if(showQuant)series(g,left,top,w,h,span,range,0xffff6bce,emitted);
+        if(showRx&&rx)series(g,left,top,w,h,span,range,0xff44ef94,received);
+        String state=rx?"RX · "+snapshot.getString("medium")+" · "+snapshot.getInt("metres")+" m · loss "+fmt(snapshot.getDouble("loss"))+" dB · noise RMS "+fmt(snapshot.getDouble("sigma")):"TX · "+source.signalMode()+" · "+(enabled?"ON":"OFF");
+        g.drawString(font,font.plainSubstrByWidth(state,690),14,432,0xffb9d9e8,false);
+        String description=source.signalMode().equals("bits")?source.bits()+" @ "+source.bitRate()+" bit/s":source.expression();
+        if(rx&&!snapshot.getString("decoded").isEmpty())description+=" · BPSK: "+snapshot.getString("decoded");
+        if(rx&&!snapshot.getString("pipeline").isEmpty())description+=" · "+snapshot.getString("pipeline");
+        g.drawString(font,font.plainSubstrByWidth(description,690),14,244,0xffafc1d1,false);
+        g.drawString(font,font.plainSubstrByWidth(tr("legend").getString(),690),14,478,0xffa9c9dd,false);
+    }
+    private void series(GuiGraphics g,int x,int y,int w,int h,double span,double range,int color,double[] values){
+        if(values.length!=512)return;
+        curve(g,x,y,w,h,span,range,color,t->values[Math.min(511,(int)(t/span*512))]);
     }
     private interface Function { double at(double seconds); }
     private void curve(GuiGraphics g,int x,int y,int w,int h,double span,double range,int color,Function f) {
