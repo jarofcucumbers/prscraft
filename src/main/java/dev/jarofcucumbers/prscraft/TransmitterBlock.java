@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.state.*;
 import net.minecraft.world.level.block.state.properties.*;
 import net.minecraft.world.phys.BlockHitResult;
 
-public final class TransmitterBlock extends HorizontalDirectionalBlock {
+public final class TransmitterBlock extends HorizontalDirectionalBlock implements EntityBlock {
     public static final MapCodec<TransmitterBlock> CODEC = simpleCodec(TransmitterBlock::new);
     public static final IntegerProperty CHANNEL = IntegerProperty.create("channel", 0, 3);
     public static final BooleanProperty POWERED = BooleanProperty.create("powered");
@@ -24,13 +24,16 @@ public final class TransmitterBlock extends HorizontalDirectionalBlock {
     @Override protected MapCodec<? extends HorizontalDirectionalBlock> codec() { return CODEC; }
     @Override protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) { builder.add(FACING, CHANNEL, POWERED); }
     @Override public BlockState getStateForPlacement(BlockPlaceContext context) { return defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite()); }
+    @Override public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState state) { return new RadioBlockEntity(pos, state); }
     public static double frequency(BlockState state) { return 100 + 25 * state.getValue(CHANNEL); }
+    @Override protected net.minecraft.world.ItemInteractionResult useItemOn(net.minecraft.world.item.ItemStack stack,
+        BlockState state, Level level, BlockPos pos, Player player, net.minecraft.world.InteractionHand hand, BlockHitResult hit) {
+        return stack.isEmpty() ? net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION
+            : net.minecraft.world.ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
+    }
     @Override protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (!level.isClientSide) {
-            BlockState next = player.isShiftKeyDown() ? state.cycle(POWERED) : state.cycle(CHANNEL);
-            level.setBlock(pos, next, 3);
-            player.displayClientMessage(Component.translatable("message.prscraft.transmitter", frequency(next), 20,
-                Component.translatable(next.getValue(POWERED) ? "message.prscraft.on" : "message.prscraft.off")), true);
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) RadioNetwork.send(serverPlayer, pos, true, "");
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
     }

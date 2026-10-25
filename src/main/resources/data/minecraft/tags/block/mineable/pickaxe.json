@@ -4,6 +4,9 @@
     "prscraft:transmitter",
     "prscraft:coaxial_port",
     "prscraft:fiber_port",
-    "prscraft:metallic_port"
+    "prscraft:metallic_port",
+    "prscraft:coaxial_cable",
+    "prscraft:fiber_cable",
+    "prscraft:metallic_cable"
   ]
 }

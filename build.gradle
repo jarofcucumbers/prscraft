@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.148'
 }
-version = '0.1.0'
+version = '0.2.0'
 group = 'dev.jarofcucumbers.prscraft'
 base { archivesName = 'prscraft' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -10,6 +10,7 @@ neoForge {
     version = '21.1.264'
     runs {
         client { client() }
+        gameTestServer { type = 'gameTestServer'; systemProperty 'neoforge.enabledGameTestNamespaces', 'prscraft' }
         server { server(); programArgument '--nogui' }
     }
     mods { prscraft { sourceSet sourceSets.main } }
@@ -17,3 +18,6 @@ neoForge {
 repositories { mavenCentral() }
 dependencies { testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'; testRuntimeOnly 'org.junit.platform:junit-platform-launcher' }
 test { useJUnitPlatform() }
+
+// Test fixtures run from the development classpath, never from the shipped mod.
+tasks.named('jar') { exclude '**/RadioGameTests*', 'data/prscraft/structure/empty.nbt' }

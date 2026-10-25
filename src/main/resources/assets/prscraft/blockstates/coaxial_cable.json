@@ -1,0 +1,75 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "prscraft:block/coaxial_cable_core"
+      }
+    },
+    {
+      "when": {
+        "north": "true"
+      },
+      "apply": {
+        "model": "prscraft:block/coaxial_cable_arm",
+        "x": 0,
+        "y": 0,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "east": "true"
+      },
+      "apply": {
+        "model": "prscraft:block/coaxial_cable_arm",
+        "x": 0,
+        "y": 90,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "south": "true"
+      },
+      "apply": {
+        "model": "prscraft:block/coaxial_cable_arm",
+        "x": 0,
+        "y": 180,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "west": "true"
+      },
+      "apply": {
+        "model": "prscraft:block/coaxial_cable_arm",
+        "x": 0,
+        "y": 270,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "up": "true"
+      },
+      "apply": {
+        "model": "prscraft:block/coaxial_cable_arm",
+        "x": 270,
+        "y": 0,
+        "uvlock": true
+      }
+    },
+    {
+      "when": {
+        "down": "true"
+      },
+      "apply": {
+        "model": "prscraft:block/coaxial_cable_arm",
+        "x": 90,
+        "y": 0,
+        "uvlock": true
+      }
+    }
+  ]
+}
