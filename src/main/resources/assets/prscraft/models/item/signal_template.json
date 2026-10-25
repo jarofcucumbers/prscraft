@@ -1,7 +1,44 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "minecraft:item/paper",
-    "layer1": "minecraft:item/map"
-  }
+    "layer0": "minecraft:item/paper"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "prscraft:profile": 1
+      },
+      "model": "prscraft:item/template_1"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 2
+      },
+      "model": "prscraft:item/template_2"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 3
+      },
+      "model": "prscraft:item/template_3"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 4
+      },
+      "model": "prscraft:item/template_4"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 5
+      },
+      "model": "prscraft:item/template_5"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 6
+      },
+      "model": "prscraft:item/template_6"
+    }
+  ]
 }

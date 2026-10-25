@@ -13,7 +13,7 @@ public final class RadioCapture {
         CompoundTag data=new CompoundTag();
         data.put("settings",local.save());data.put("processor",radio.processor().save());data.putString("kind",radio.kind());
         data.putInt("graphLayers",radio.graphLayers());data.putInt("graphTerms",radio.graphTerms());data.putLong("time",level.getGameTime());
-        boolean processor=!radio.kind().equals("radio");
+        boolean processor=!radio.isSource();
         RadioSettings receiver=processor?new RadioSettings(local.expression(),local.sampleHz(),local.levels(),false,local.enabled(),local.thermal(),local.noiseRms(),local.carrierMHz(),local.powerDbm(),local.secondKind(),local.duty()):local;
         CableNetwork.Link link=processor?CableNetwork.monitor(level,pos,receiver):CableNetwork.receive(level,pos,receiver);
         boolean receiving=processor||!local.transmit();
@@ -27,7 +27,7 @@ public final class RadioCapture {
         double[] original=SignalChain.generate(source,span,512,true), sampled=original.clone();
         if(source.signalMode().equals("sampled")||source.signalMode().equals("quantized")){
             var program=SignalProgram.parse(source.expression());
-            for(int i=0;i<sampled.length;i++)sampled[i]=program.sampled(span*i/sampled.length,source.sampleHz(),source.secondKind(),source.duty());
+            for(int i=0;i<sampled.length;i++)sampled[i]=program.sampled(span*i/sampled.length+source.lab().offsetSeconds(),source.sampleHz(),source.secondKind(),source.duty())*SourceMath.scale(source);
         }
         double[] sourceOutput=source.enabled()?SignalChain.generate(source,span,512,false):new double[512];
         double[] emitted=SignalChain.process(sourceOutput,span,stages);
@@ -37,10 +37,12 @@ public final class RadioCapture {
         double sigma=connected?Transmission.rms(local,source,CableNetwork.interferenceRms(level,pos,link,local)):0;
         long seed=(connected?link.sourcePos().asLong():pos.asLong())^level.getGameTime();
         double gain=Transmission.gain(source.powerDbm(),loss);
-        for(int i=0;i<received.length;i++)received[i]=emitted[i]*gain+sigma*SignalProgram.noise(seed,i);
+        for(int i=0;i<received.length;i++)received[i]=emitted[i]*gain+(connected?local.lab().noiseMean():0)+sigma*SignalProgram.noise(seed,i);
         data.put("source",source.save());data.putIntArray("original",SignalChain.pack(original));data.putIntArray("sampled",SignalChain.pack(sampled));
         data.putIntArray("sourceOutput",SignalChain.pack(sourceOutput));data.putIntArray("emitted",SignalChain.pack(emitted));
         data.putIntArray("received",SignalChain.pack(received));data.putDouble("span",span);data.putDouble("sigma",sigma);data.putDouble("loss",loss);
+        data.putDouble("noiseMean",connected?local.lab().noiseMean():0);
+        data.putDouble("referenceWatts",.1);
         data.putString("pipeline",String.join(" → ",stages.stream().map(SignalChain.Stage::kind).toList()));
         if(connected){data.putInt("metres",link.metres());data.putString("medium",link.medium().name());}
         if(receiving&&radio.processor().demodulate()){

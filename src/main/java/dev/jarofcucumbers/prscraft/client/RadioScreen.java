@@ -22,7 +22,7 @@ public final class RadioScreen extends Screen {
     private ProcessorSettings decoder;
     private boolean demodulate;
     private int sentView, viewTicks;
-    private Button stageButton,kindButton,physicalButton;
+    private Button stageButton,kindButton,physicalButton,roleButton;
     private final java.util.List<Button> termButtons=new java.util.ArrayList<>();
     private Button apply;
     private boolean transmit, enabled, thermal, secondKind;
@@ -69,7 +69,7 @@ public final class RadioScreen extends Screen {
         expression=field(14,43,692,ex,"expression");
         sample=field(14,88,94,sa,"sample"); levels=field(120,88,88,le,"levels"); duty=field(220,88,76,du,"duty");
         power=field(308,88,88,po,"power"); carrier=field(408,88,138,ca,"carrier"); noise=field(558,88,148,no,"noise");
-        button(14,118,90,Component.literal(transmit?"TX":"RX"),b->{transmit=!transmit;b.setMessage(Component.literal(transmit?"TX":"RX"));serverError="";visibility();});
+        roleButton=button(14,118,90,Component.literal(transmit?"TX":"RX"),b->{transmit=!transmit;b.setMessage(Component.literal(transmit?"TX":"RX"));serverError="";visibility();});
         button(110,118,100,toggle("enabled",enabled),b->{enabled=!enabled;b.setMessage(toggle("enabled",enabled));serverError="";});
         kindButton=button(216,118,148,Component.literal(tr("sampling").getString()+": "+(secondKind?"II":"I")),b->{secondKind=!secondKind;b.setMessage(Component.literal(tr("sampling").getString()+": "+(secondKind?"II":"I")));serverError="";});
         physicalButton=button(370,118,180,toggle("physical",thermal),b->{thermal=!thermal;b.setMessage(toggle("physical",thermal));serverError="";});
@@ -85,37 +85,41 @@ public final class RadioScreen extends Screen {
         bits=field(156,170,172,bitText,"bits");bits.setMaxLength(128);
         bitRate=field(340,170,80,rateText,"bit_rate");oscillator=field(432,170,84,oscText,"oscillator");
         stageButton=button(14,170,130,Component.empty(),b->{
-            if(transmit){String[] modes={"analog","sampled","quantized","bits"};int i=java.util.Arrays.asList(modes).indexOf(signalMode);signalMode=modes[(i+1)%modes.length];}
+            if(transmit){String[] modes={"analog","sampled","quantized","bits","discrete"};int i=java.util.Arrays.asList(modes).indexOf(signalMode);signalMode=modes[(i+1)%modes.length];}
             else demodulate=!demodulate;
             serverError="";visibility();
         });
         button(528,170,178,tr("media"),b->{flushView();var tag=new CompoundTag();tag.putString("action","media");PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,tag));});
+        button(350,4,110,tr("lab_short"),b->{flushView();minecraft.setScreen(new LabScreen(pos,snapshot));});
+        button(468,4,110,tr("spectrum"),b->{flushView();minecraft.setScreen(new SpectrumScreen(this,snapshot));});
+        button(586,4,120,tr("book"),b->{flushView();minecraft.setScreen(new HandbookScreen(this));});
         termButtons.clear();
         for(int i=0;i<8;i++) {
             final int index=i;
             termButtons.add(button(14+i*87,448,81,Component.literal((showTerm[i]?"● ":"○ ")+"f"+(i+1)).withColor(COLORS[i]&0xffffff),b->{showTerm[index]=!showTerm[index];b.setMessage(Component.literal((showTerm[index]?"● ":"○ ")+"f"+(index+1)).withColor(COLORS[index]&0xffffff));}));
         }
         visibility();
-        if(recorded)for(var renderable:renderables)if(renderable instanceof AbstractWidget widget && widget.getY()<216)widget.active=false;
+        if(recorded)for(var renderable:renderables)if(renderable instanceof AbstractWidget widget && widget.getY()<216 && !(widget.getY()==4 && widget.getX()>=468))widget.active=false;
     }
     private static String input(double n) { return java.math.BigDecimal.valueOf(n).stripTrailingZeros().toPlainString(); }
     private static String fmt(double n) { if(n != 0 && Math.abs(n) < 0.0001) return String.format(Locale.ROOT,"%.2e",n); return String.format(Locale.ROOT,"%.4f",n).replaceAll("0+$", "").replaceAll("\\.$", ""); }
     private static double number(EditBox box) { return Double.parseDouble(box.getValue().replace(',','.')); }
     private void visibility(){
-        boolean waveform=transmit&&!signalMode.equals("bits");
+        boolean waveform=transmit&&!signalMode.equals("bits")&&!signalMode.equals("discrete");
         boolean sampling=waveform&&!signalMode.equals("analog");
-        expression.visible=waveform;sample.visible=sampling;levels.visible=sampling&&signalMode.equals("quantized");duty.visible=sampling;
-        power.visible=transmit;noise.visible=!transmit;kindButton.visible=sampling;physicalButton.visible=!transmit;
-        bits.visible=transmit&&signalMode.equals("bits");bitRate.visible=bits.visible||!transmit&&demodulate;oscillator.visible=!transmit&&demodulate;
+        expression.visible=waveform;sample.visible=sampling||transmit&&signalMode.equals("discrete");levels.visible=sampling&&signalMode.equals("quantized");duty.visible=sampling;
+        power.visible=transmit&&saved.lab().quantity().equals("relative");noise.visible=!transmit;kindButton.visible=sampling;physicalButton.visible=!transmit;
+        bits.visible=transmit&&signalMode.equals("bits")&&!saved.lab().randomBits();bitRate.visible=transmit&&signalMode.equals("bits")||!transmit&&demodulate;oscillator.visible=!transmit&&demodulate;
+        if(snapshot.getString("kind").equals("bit_generator")){roleButton.active=false;stageButton.active=false;}
         stageButton.setMessage(transmit?tr("mode_"+signalMode):tr(demodulate?"decode_bpsk":"decode_raw"));
     }
     private RadioSettings draft() {
-        boolean waveform=transmit&&!signalMode.equals("bits"), sampling=waveform&&!signalMode.equals("analog");
-        return new RadioSettings(waveform?expression.getValue():saved.expression(),sampling?number(sample):saved.sampleHz(),
+        boolean waveform=transmit&&!signalMode.equals("bits")&&!signalMode.equals("discrete"), sampling=waveform&&!signalMode.equals("analog");
+        return new RadioSettings(waveform?expression.getValue():saved.expression(),(sampling||transmit&&signalMode.equals("discrete"))?number(sample):saved.sampleHz(),
             sampling&&signalMode.equals("quantized")?Integer.parseInt(levels.getValue()):saved.levels(),transmit,enabled,thermal,
             transmit?saved.noiseRms():number(noise),number(carrier),transmit?number(power):saved.powerDbm(),secondKind,sampling?number(duty):saved.duty(),
             transmit?signalMode:saved.signalMode(),transmit&&signalMode.equals("bits")?bits.getValue():saved.bits(),
-            transmit&&signalMode.equals("bits")?number(bitRate):saved.bitRate());
+            transmit&&signalMode.equals("bits")?number(bitRate):saved.bitRate(),transmit?saved.lab():saved.lab().variance(number(noise)*number(noise)));
     }
     private ProcessorSettings draftDecoder(){
         return new ProcessorSettings(decoder.gainDb(),decoder.lowHz(),decoder.highHz(),decoder.modulation(),
@@ -149,7 +153,7 @@ public final class RadioScreen extends Screen {
         g.pose().pushPose();g.pose().translate(ox,oy,0);g.pose().scale(scale,scale,1);
         int x=(int)((mx-ox)/scale),y=(int)((my-oy)/scale);
         g.fill(0,0,W,H,0xff141e2b);g.fill(0,0,W,29,0xff253b50);
-        g.drawString(font,recorded?tr("recorded"):title,14,10,0xffe8f6ff,false);
+        g.drawString(font,font.plainSubstrByWidth((recorded?tr("recorded"):title).getString(),320),14,10,0xffe8f6ff,false);
         if(expression.visible)text(g,"expression",14,32,0xffa9c9dd);
         if(!transmit){text(g,"rx_only",14,40,0xffb9d9e8);text(g,"rx_difference",14,62,0xff819ab0);}
         if(bits.visible)text(g,"bits",156,158,0xffa9c9dd);
@@ -177,8 +181,8 @@ public final class RadioScreen extends Screen {
         double span=rx?snapshot.getDouble("span"):SignalChain.span(source,java.util.List.of());
         double[] original=rx?SignalChain.unpack(snapshot.getIntArray("original")):SignalChain.generate(source,span,512,true);
         double[] sampled=rx?SignalChain.unpack(snapshot.getIntArray("sampled")):original.clone();
-        if(!rx&&!source.signalMode().equals("bits")&&!source.signalMode().equals("analog")){
-            var program=SignalProgram.parse(source.expression());for(int i=0;i<512;i++)sampled[i]=program.sampled(span*i/512,source.sampleHz(),source.secondKind(),source.duty());
+        if(!rx&&!source.signalMode().equals("bits")&&!source.signalMode().equals("discrete")&&!source.signalMode().equals("analog")){
+            var program=SignalProgram.parse(source.expression());for(int i=0;i<512;i++)sampled[i]=program.sampled(span*i/512+source.lab().offsetSeconds(),source.sampleHz(),source.secondKind(),source.duty())*SourceMath.scale(source);
         }
         double[] emitted=rx?SignalChain.unpack(snapshot.getIntArray("emitted")):source.enabled()?SignalChain.generate(source,span,512,false):new double[512];
         double[] received=rx?SignalChain.unpack(snapshot.getIntArray("received")):new double[0];
@@ -186,17 +190,17 @@ public final class RadioScreen extends Screen {
         for(double[] values:new double[][]{original,sampled,emitted,received})for(double value:values)range=Math.max(range,Math.abs(value)*1.15);
         g.drawString(font,fmt(range),2,top,0xff819ab0,false);g.drawString(font,"0",28,top+h/2,0xff819ab0,false);g.drawString(font,fmt(-range),2,top+h-8,0xff819ab0,false);
         for(int i=0;i<=4;i++)g.drawString(font,fmt(span*i/4)+" s",left+i*w/4-12,top+h+3,0xff819ab0,false);
-        if(!source.signalMode().equals("bits")){
+        if(!source.signalMode().equals("bits")&&!source.signalMode().equals("discrete")){
             var signal=SignalProgram.parse(source.expression());
-            for(int i=0;i<signal.terms().size();i++)if(showTerm[i])curve(g,left,top,w,h,span,range,COLORS[i],signal.terms().get(i)::at);
+            for(int i=0;i<signal.terms().size();i++)if(showTerm[i]){var component=signal.terms().get(i);double multiplier=SourceMath.scale(source);curve(g,left,top,w,h,span,range,COLORS[i],t->component.at(t+source.lab().offsetSeconds())*multiplier);}
         }
         if(showSum)series(g,left,top,w,h,span,range,0xffffffff,original);
         if(showSample)series(g,left,top,w,h,span,range,0xfff9ca24,sampled);
         if(showQuant)series(g,left,top,w,h,span,range,0xffff6bce,emitted);
         if(showRx&&rx)series(g,left,top,w,h,span,range,0xff44ef94,received);
-        String state=rx?"RX · "+snapshot.getString("medium")+" · "+snapshot.getInt("metres")+" m · loss "+fmt(snapshot.getDouble("loss"))+" dB · noise RMS "+fmt(snapshot.getDouble("sigma")):"TX · "+source.signalMode()+" · "+(enabled?"ON":"OFF");
+        String state=rx?"RX · "+snapshot.getString("medium")+" · "+snapshot.getInt("metres")+" m · loss "+fmt(snapshot.getDouble("loss"))+" dB · noise σ "+fmt(snapshot.getDouble("sigma")):"TX · "+source.signalMode()+" · "+(enabled?"ON":"OFF");
         g.drawString(font,font.plainSubstrByWidth(state,690),14,432,0xffb9d9e8,false);
-        String description=source.signalMode().equals("bits")?source.bits()+" @ "+source.bitRate()+" bit/s":source.expression();
+        String description=source.signalMode().equals("bits")?(source.lab().randomBits()?"Bernoulli P1="+source.lab().probabilityOne():source.bits())+" @ "+source.bitRate()+" bit/s":source.signalMode().equals("discrete")?source.lab().samples():source.expression();
         if(rx&&!snapshot.getString("decoded").isEmpty())description+=" · BPSK: "+snapshot.getString("decoded");
         if(rx&&!snapshot.getString("pipeline").isEmpty())description+=" · "+snapshot.getString("pipeline");
         g.drawString(font,font.plainSubstrByWidth(description,690),14,244,0xffafc1d1,false);

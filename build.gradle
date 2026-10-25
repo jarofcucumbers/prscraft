@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.148'
 }
-version = '0.3.0'
+version = '0.4.0'
 group = 'dev.jarofcucumbers.prscraft'
 base { archivesName = 'prscraft' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -21,3 +21,8 @@ test { useJUnitPlatform() }
 
 // Test fixtures run from the development classpath, never from the shipped mod.
 tasks.named('jar') { exclude '**/RadioGameTests*', 'data/prscraft/structure/empty.nbt' }
+
+// Domain settings now contain nested NBT. Unit tests need Minecraft's actual NBT
+// classes and their dependencies as well as our output; no game bootstrap is used.
+sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.main.compileClasspath

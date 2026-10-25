@@ -41,7 +41,8 @@ public final class PresetMenu extends AbstractContainerMenu {
             var tag=new net.minecraft.nbt.CompoundTag();tag.putString("kind",radio.kind());tag.put("settings",radio.settings().save());
             tag.put("processor",radio.processor().save());tag.putInt("graphLayers",radio.graphLayers());tag.putInt("graphTerms",radio.graphTerms());
             var result=new ItemStack(PRSCraft.TEMPLATE.get());result.set(DataComponents.CUSTOM_DATA,CustomData.of(tag));
-            result.set(DataComponents.CUSTOM_NAME,Component.translatable("item.prscraft.saved_template",radio.kind()));
+            result.set(DataComponents.CUSTOM_NAME,Component.literal(TemplateItem.summary(radio.kind(),radio.settings(),radio.processor())));
+            result.set(DataComponents.CUSTOM_MODEL_DATA,new net.minecraft.world.item.component.CustomModelData(TemplateItem.model(radio.kind(),radio.settings())));
             radio.media.setStackInSlot(0,result);return true;
         }
         if(action==1)return radio.applyTemplate();

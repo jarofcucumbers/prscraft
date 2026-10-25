@@ -127,4 +127,50 @@ public final class RadioGameTests {
         h.succeed();
     }
 
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void handbookCoversEveryItemAndMatchesVersion(GameTestHelper h){
+        for(var item:PRSCraft.ITEMS.getEntries())h.assertTrue(HandbookContent.COVERED_ITEMS.contains(item.getId().getPath()),"Missing handbook coverage: "+item.getId());
+        String version=net.neoforged.fml.ModList.get().getModContainerById(PRSCraft.ID).orElseThrow().getModInfo().getVersion().toString();
+        h.assertTrue(version.equals(HandbookContent.VERSION),"Handbook and mod versions must agree");
+        for(String language:java.util.List.of("en_us","uk_ua")){
+            try(var stream=RadioGameTests.class.getResourceAsStream("/assets/prscraft/lang/"+language+".json")){
+                var translations=com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(stream,java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+                for(var page:HandbookContent.PAGES)for(String suffix:java.util.List.of("title","body")){
+                    String key="book.prscraft."+page.id()+"."+suffix;h.assertTrue(translations.has(key)&&!translations.get(key).getAsString().isBlank(),"Missing handbook translation: "+key);
+                }
+            }catch(java.io.IOException e){throw new RuntimeException(e);}
+        }
+        h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void dedicatedGeneratorAndAwgnReachReceiver(GameTestHelper h){
+        setup(h);h.setBlock(TX,PRSCraft.BIT_GENERATOR.get());RadioBlockEntity generator=h.getBlockEntity(TX);
+        h.assertTrue(generator.settings().signalMode().equals("bits")&&generator.settings().lab().randomBits(),"Generator defaults to Bernoulli bits");
+        var sourceLab=new LabSettings(false,true,.8,-2,1,"0,1",42,0,0,0,false,"relative",.1);
+        generator.configure(generator.settings().withLab(sourceLab));RadioBlockEntity rx=h.getBlockEntity(RX);
+        var noise=new LabSettings(true,false,.5,-1,1,"0,1",42,0,.5,.25,true,"relative",.1);
+        rx.configure(rx.settings().withLab(noise));var data=RadioCapture.capture(h.getLevel(),h.absolutePos(RX));
+        h.assertTrue(data.getBoolean("connected"),"Dedicated generator must be a routable TX source");
+        double[] sent=SignalChain.unpack(data.getIntArray("emitted")),received=SignalChain.unpack(data.getIntArray("received"));
+        double gain=Transmission.gain(generator.settings().powerDbm(),data.getDouble("loss")),mean=0,squares=0;
+        for(int i=0;i<received.length;i++){double n=received[i]-sent[i]*gain;mean+=n;squares+=n*n;}
+        mean/=received.length;double variance=squares/received.length-mean*mean;
+        h.assertTrue(Math.abs(mean-.5)<.12&&Math.abs(variance-.25)<.12,"AWGN samples must have the configured nonzero mean and variance");
+        var spectrum=Spectrum.analyze(received,data.getDouble("span"));
+        h.assertTrue(Math.abs(java.util.Arrays.stream(spectrum.psd()).sum()*spectrum.binHz()-spectrum.powerW())<1e-8,"Received spectrum must obey Parseval");
+        h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void analyzerUiDataIsReadOnlyAndCannotInspectUnconnectedDevice(GameTestHelper h){
+        setup(h);var remote=new BlockPos(7,1,7);h.setBlock(remote,PRSCraft.TRANSMITTER.get());
+        RadioBlockEntity tx=h.getBlockEntity(TX),rx=h.getBlockEntity(RX);
+        var beforeTx=tx.saveWithFullMetadata(h.getLevel().registryAccess());var beforeRx=rx.saveWithFullMetadata(h.getLevel().registryAccess());
+        var report=AnalyzerService.scan(h.getLevel(),h.absolutePos(new BlockPos(2,1,1)),h.absolutePos(remote));
+        var selected=new BlockPos(report.getInt("selectedX"),report.getInt("selectedY"),report.getInt("selectedZ"));
+        h.assertTrue(!selected.equals(h.absolutePos(remote)),"Analyzer must reject nomination of an unrelated device");
+        h.assertTrue(report.getList("devices",10).size()==2,"Local segment must list its two attached devices");
+        h.assertTrue(beforeTx.equals(tx.saveWithFullMetadata(h.getLevel().registryAccess()))&&beforeRx.equals(rx.saveWithFullMetadata(h.getLevel().registryAccess())),"Analyzer must not change settings, media or graph preferences");
+        h.succeed();
+    }
+
 }

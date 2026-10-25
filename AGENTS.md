@@ -1,0 +1,9 @@
+# PRSCraft development
+
+Use the existing checkout. Java 21, Minecraft 1.21.1, NeoForge 21.1.264; build with `./gradlew build`, integration checks with `./gradlew runGameTestServer`.
+
+Every user-facing feature or behavior change MUST update the in-game handbook: `HandbookContent.java`, the `book.prscraft.*` translations in both `en_us.json` and `uk_ua.json`, and relevant diagrams/formulas in `HandbookScreen.java`. Keep the handbook version equal to the mod version. Add every new block/item to handbook coverage; the integration test checks this. Explain signal units, assumptions and simulation limits honestly. Keep README usage examples current.
+
+Preserve backwards-compatible NBT defaults for existing worlds, templates and recordings. Server-side settings validation and read-only analyzer behavior are required. Keep PSD/ESD normalization consistent with Parseval and distinguish finite-window metrics from whole-signal energy. Q-based AWGN theory is a symbol-space model and must not be advertised as an exact BER prediction for arbitrary nonlinear RF chains.
+
+When delivering a new release, build and validate the JAR, exclude GameTest fixtures, copy it and its SHA-256 into `releases/`. Never claim interactive UI validation unless it was actually run.

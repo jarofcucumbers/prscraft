@@ -19,7 +19,8 @@ public final class RadioBlockEntity extends BlockEntity {
             if(slot==0 && level!=null && !level.isClientSide) applyTemplate();
         }
     };
-    public String kind(){return getBlockState().getBlock() instanceof ProcessorBlock block?block.kind:"radio";}
+    public String kind(){return getBlockState().getBlock() instanceof ProcessorBlock block?block.kind:getBlockState().getBlock() instanceof BitGeneratorBlock?"bit_generator":"radio";}
+    public boolean isSource(){return kind().equals("radio")||kind().equals("bit_generator");}
     public ProcessorSettings processor(){return processor;}
     public void configureProcessor(ProcessorSettings value){processor=value;setChanged();}
     public int graphLayers(){return graphLayers;}
@@ -37,9 +38,17 @@ public final class RadioBlockEntity extends BlockEntity {
             configure(next);configureProcessor(nextProcessor);graph(tag.getInt("graphLayers"),tag.getInt("graphTerms"));return true;
         }catch(IllegalArgumentException ignored){return false;}
     }
-    public RadioBlockEntity(BlockPos pos, BlockState state) { super(PRSCraft.RADIO_ENTITY.get(), pos, state); }
+    public RadioBlockEntity(BlockPos pos, BlockState state) {
+        super(PRSCraft.RADIO_ENTITY.get(), pos, state);
+        if(state.getBlock() instanceof BitGeneratorBlock){
+            var lab=LabSettings.defaults(.02);
+            settings=new RadioSettings("sin(10)",100,16,true,true,true,.02,100,20,true,.5,"bits","10110010",10,
+                new LabSettings(false,true,.5,-1,1,lab.samples(),42,0,0,.0004,false,"relative",.1));
+        }
+    }
     public RadioSettings settings() { return settings; }
     public void configure(RadioSettings settings) {
+        if(kind().equals("bit_generator")&&(!settings.transmit()||!settings.signalMode().equals("bits")))throw new IllegalArgumentException("generator_mode");
         this.settings = settings; setChanged();
         if (level != null) level.setBlock(worldPosition, getBlockState().setValue(TransmitterBlock.POWERED, settings.enabled()), 3);
     }
@@ -54,8 +63,11 @@ public final class RadioBlockEntity extends BlockEntity {
         if(tag.contains("graphLayers")){graphLayers=tag.getInt("graphLayers")&31;graphTerms=tag.getInt("graphTerms")&255;}
         if(tag.contains("media"))media.deserializeNBT(registries,tag.getCompound("media"));
         if (tag.contains("radio")) {
-            try { settings = RadioSettings.read(tag.getCompound("radio")); }
-            catch (IllegalArgumentException ignored) { settings = RadioSettings.DEFAULT; }
+            try { var next=RadioSettings.read(tag.getCompound("radio"));
+                if(kind().equals("bit_generator")&&(!next.transmit()||!next.signalMode().equals("bits")))throw new IllegalArgumentException("generator_mode");
+                settings=next;
+            }
+            catch (IllegalArgumentException ignored) { /* Keep valid constructor defaults. */ }
         }
     }
 }

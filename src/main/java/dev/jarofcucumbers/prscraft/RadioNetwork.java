@@ -36,8 +36,24 @@ public final class RadioNetwork {
         };
         public Type<? extends CustomPacketPayload> type(){return TYPE;}
     }
+    public record Analyze(BlockPos port,BlockPos device) implements CustomPacketPayload {
+        public static final Type<Analyze> TYPE=new Type<>(ResourceLocation.fromNamespaceAndPath(PRSCraft.ID,"analyze"));
+        public static final StreamCodec<RegistryFriendlyByteBuf,Analyze> CODEC=new StreamCodec<>(){
+            public Analyze decode(RegistryFriendlyByteBuf b){return new Analyze(b.readBlockPos(),b.readBlockPos());}
+            public void encode(RegistryFriendlyByteBuf b,Analyze p){b.writeBlockPos(p.port);b.writeBlockPos(p.device);}
+        };
+        public Type<? extends CustomPacketPayload> type(){return TYPE;}
+    }
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("3");
+        var registrar = event.registrar("4");
+        registrar.playToServer(Analyze.TYPE,Analyze.CODEC,(request,context)->context.enqueueWork(()->{
+            if(!(context.player() instanceof ServerPlayer player))return;
+            if(!player.getMainHandItem().is(PRSCraft.ANALYZER.get())&&!player.getOffhandItem().is(PRSCraft.ANALYZER.get()))return;
+            if(player.distanceToSqr(request.port.getX()+.5,request.port.getY()+.5,request.port.getZ()+.5)>64||!player.level().hasChunkAt(request.port))return;
+            long now=player.level().getGameTime();var tag=player.getPersistentData();
+            if(tag.contains("prscraft_analysis")&&now-tag.getLong("prscraft_analysis")<4)return;
+            tag.putLong("prscraft_analysis",now);AnalyzerService.send(player,request.port,request.device,false);
+        }));
         registrar.playToServer(Request.TYPE, Request.CODEC, (request, context) -> context.enqueueWork(() -> {
             if (!(context.player() instanceof ServerPlayer player)) return;
             var level = player.serverLevel();

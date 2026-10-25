@@ -6,9 +6,15 @@ import net.minecraft.client.Minecraft;
 /** Only resolved by the clientbound packet handler on the physical client. */
 public final class RadioClient {
     private RadioClient() {}
+    public static void openHandbook(){Minecraft.getInstance().setScreen(new HandbookScreen(null));}
     public static void receive(RadioNetwork.Snapshot packet) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (packet.open()) minecraft.setScreen(packet.data().getString("kind").equals("radio") ? new RadioScreen(packet.pos(), packet.data()) : new ProcessorScreen(packet.pos(),packet.data()));
+        if (packet.open()) {
+            String kind=packet.data().getString("kind");
+            minecraft.setScreen(kind.equals("analyzer")?new AnalyzerScreen(packet.pos(),packet.data()):kind.equals("radio")||kind.equals("bit_generator")?new RadioScreen(packet.pos(),packet.data()):new ProcessorScreen(packet.pos(),packet.data()));
+        }
+        else if(minecraft.screen instanceof LabScreen lab&&lab.pos().equals(packet.pos()))lab.receive(packet.data());
+        else if(minecraft.screen instanceof AnalyzerScreen analyzer&&analyzer.pos().equals(packet.pos()))analyzer.receive(packet.data());
         else if(minecraft.screen instanceof ProcessorScreen processor && processor.pos().equals(packet.pos()))processor.receive(packet.data());
         else if (minecraft.screen instanceof RadioScreen screen && screen.pos().equals(packet.pos())) screen.receive(packet.data());
     }
@@ -24,6 +30,18 @@ public final class RadioClient {
             java.nio.file.Files.writeString(file,csv,java.nio.charset.StandardCharsets.UTF_8,java.nio.file.StandardOpenOption.CREATE_NEW);
             if(minecraft.player!=null)minecraft.player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.prscraft.exported",file.toString()),false);
         }catch(java.io.IOException | IllegalArgumentException e){if(minecraft.player!=null)minecraft.player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.prscraft.export_error"),false);}
+    }
+
+    public static void exportSpectrum(net.minecraft.nbt.CompoundTag data,String stage){
+        var minecraft=Minecraft.getInstance();
+        try{
+            int[] samples=data.getIntArray(stage);if(samples.length!=512)throw new IllegalArgumentException("capture");
+            var spectrum=dev.jarofcucumbers.prscraft.Spectrum.analyze(dev.jarofcucumbers.prscraft.SignalChain.unpack(samples),data.getDouble("span"));
+            var folder=minecraft.gameDirectory.toPath().resolve("prscraft/recordings");java.nio.file.Files.createDirectories(folder);
+            var file=folder.resolve("spectrum-"+java.util.UUID.randomUUID()+".csv");
+            java.nio.file.Files.writeString(file,dev.jarofcucumbers.prscraft.Spectrum.csv(spectrum),java.nio.charset.StandardCharsets.UTF_8,java.nio.file.StandardOpenOption.CREATE_NEW);
+            if(minecraft.player!=null)minecraft.player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.prscraft.exported",file.toString()),false);
+        }catch(java.io.IOException|IllegalArgumentException e){if(minecraft.player!=null)minecraft.player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.prscraft.export_error"),false);}
     }
 
 }

@@ -29,6 +29,8 @@ public final class ProcessorScreen extends Screen {
     private void button(int x,int y,int width,Component label,Button.OnPress press){addRenderableWidget(Button.builder(label,press).bounds(x,y,width,20).build());}
     @Override protected void init(){
         scale=Math.min((width-8f)/W,(height-8f)/H);ox=(int)((width-W*scale)/2);oy=(int)((height-H*scale)/2);
+        button(234,4,110,tr("spectrum"),b->minecraft.setScreen(new SpectrumScreen(this,snapshot)));
+        button(352,4,110,tr("book"),b->minecraft.setScreen(new HandbookScreen(this)));
         gain=field(16,56,130,saved.gainDb(),gain,"gain");low=field(16,56,130,saved.lowHz(),low,"low");high=field(160,56,130,saved.highHz(),high,"high");
         oscillator=field(16,56,130,saved.oscillatorHz(),oscillator,"oscillator");symbol=field(160,56,130,saved.symbolHz(),symbol,"bit_rate");depth=field(304,56,150,saved.depth(),depth,"depth");
         gain.visible=kind.equals("amplifier");low.visible=high.visible=kind.equals("frequency_filter");oscillator.visible=symbol.visible=depth.visible=kind.equals("modulator");

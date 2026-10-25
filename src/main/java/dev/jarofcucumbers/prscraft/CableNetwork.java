@@ -45,7 +45,7 @@ public final class CableNetwork {
                     BlockPos next = node.relative(d);
                     if (next.equals(receiver) || !level.hasChunkAt(next)) continue;
                     if (level.getBlockEntity(next) instanceof RadioBlockEntity radio) {
-                        if (!radio.kind().equals("radio")) continue;
+                        if (!radio.isSource()) continue;
                         List<SignalChain.Stage> processors=new ArrayList<>();
                         BlockPos cursor=node;
                         while(cursor!=null && !cursor.equals(receiver)) {
@@ -74,7 +74,7 @@ public final class CableNetwork {
         for (BlockPos pos : BlockPos.betweenClosed(receiver.offset(-4,-4,-4), receiver.offset(4,4,4))) {
             if (pos.equals(link.sourcePos()) || !level.hasChunkAt(pos)) continue;
             if (level.getBlockEntity(pos) instanceof RadioBlockEntity radio) {
-                if (!radio.kind().equals("radio")) continue;
+                if (!radio.isSource()) continue;
                 RadioSettings source = radio.settings();
                 if (!source.transmit() || !source.enabled()) continue;
                 double overlap = SignalBudget.overlap(settings.carrierMHz(), source.carrierMHz(), 40);

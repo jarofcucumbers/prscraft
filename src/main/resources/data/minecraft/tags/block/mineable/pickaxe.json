@@ -10,6 +10,7 @@
     "prscraft:metallic_cable",
     "prscraft:amplifier",
     "prscraft:frequency_filter",
-    "prscraft:modulator"
+    "prscraft:modulator",
+    "prscraft:bit_generator"
   ]
 }
