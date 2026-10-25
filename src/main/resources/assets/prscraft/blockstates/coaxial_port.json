@@ -1,7 +1,34 @@
 {
   "variants": {
-    "": {
-      "model": "prscraft:block/coaxial_port"
+    "facing=up": {
+      "model": "prscraft:block/coaxial_port",
+      "x": 0,
+      "y": 0
+    },
+    "facing=down": {
+      "model": "prscraft:block/coaxial_port",
+      "x": 180,
+      "y": 0
+    },
+    "facing=north": {
+      "model": "prscraft:block/coaxial_port",
+      "x": 90,
+      "y": 0
+    },
+    "facing=south": {
+      "model": "prscraft:block/coaxial_port",
+      "x": 270,
+      "y": 0
+    },
+    "facing=east": {
+      "model": "prscraft:block/coaxial_port",
+      "x": 90,
+      "y": 90
+    },
+    "facing=west": {
+      "model": "prscraft:block/coaxial_port",
+      "x": 90,
+      "y": 270
     }
   }
 }

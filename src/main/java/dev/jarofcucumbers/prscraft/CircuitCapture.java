@@ -12,7 +12,7 @@ public final class CircuitCapture{
     }
     private static final class Frame{
         double[] samples,original,sampled,sourceOutput,inputA,inputB;RadioSettings source;BlockPos sourcePos;
-        String units="u";double length,loss,damageVariance,sigma;CircuitMath.Correlation correlation;
+        String units="u";double length,loss,damageVariance,sigma;CircuitMath.Correlation correlation;GrayCodec.Result gray;
     }
     private static final class Engine{
         final Level level;final Double carrier;final Map<BlockPos,Node> nodes=new HashMap<>();final Set<BlockPos> stack=new HashSet<>();
@@ -74,6 +74,7 @@ public final class CircuitCapture{
                 if(b!=null){if(!a.units.equals(b.units))throw new IllegalArgumentException("incompatible_units");f.length=Math.max(a.length,b.length);f.loss=Math.max(a.loss,b.loss);f.damageVariance=Math.max(a.damageVariance,b.damageVariance);}
                 var dsp=device.dsp();
                 switch(device.kind()){
+                    case "gray_converter" -> {if(!a.units.equals("u"))throw new IllegalArgumentException("incompatible_units");f.gray=GrayCodec.process(a.samples,span,device.gray());f.samples=f.gray.samples();}
                     case "adder" -> f.samples=CircuitMath.add(a.samples,b.samples,dsp.gainA(),dsp.gainB());
                     case "integrator" -> {f.samples=CircuitMath.integral(a.samples,span,dsp.endSeconds());f.units=a.units+"*s";}
                     case "delay_line" -> f.samples=CircuitMath.delay(a.samples,span,dsp.delaySeconds());
@@ -93,7 +94,7 @@ public final class CircuitCapture{
     }
     public static CompoundTag capture(Level level,BlockPos pos){
         RadioBlockEntity device=(RadioBlockEntity)level.getBlockEntity(pos);var data=new CompoundTag();RadioSettings local=device.settings();
-        data.putBoolean("correlationView",device.correlationView());data.put("settings",local.save());data.put("processor",device.processor().save());data.put("dsp",device.dsp().save());data.putString("kind",device.kind());
+        data.putBoolean("correlationView",device.correlationView());data.put("settings",local.save());data.put("processor",device.processor().save());data.put("dsp",device.dsp().save());data.put("gray",device.gray().save());data.putString("kind",device.kind());
         data.putInt("graphLayers",device.graphLayers());data.putInt("graphTerms",device.graphTerms());data.putLong("time",level.getGameTime());data.putDouble("referenceWatts",.1);
         boolean rootSource=device.isSource()&&local.transmit();Engine engine=new Engine(level,device.isSource()&&!local.transmit()?local.carrierMHz():null);
         Node root=engine.build(pos);data.putBoolean("connected",root!=null&&!rootSource);
@@ -112,6 +113,7 @@ public final class CircuitCapture{
             for(Node n:used){for(Input input:new Input[]{n.a,n.b})if(input!=null)for(BlockPos node:input.route().path())if(level.getBlockState(node).getBlock() instanceof CableBlock)cables.add(node);
                 if(n.a==null){var source=n.device.settings().save();source.putString("position",n.device.getBlockPos().toShortString());sources.add(source);}}
             data.put("sources",sources);data.putDouble("wireMetres",cables.stream().mapToDouble(c->CircuitNetwork.cable(level,c).metres()).sum());data.putInt("cables",cables.size());
+            if(f.gray!=null){data.putString("grayInput",f.gray.input());data.putString("grayOutput",f.gray.output());}
             if(f.correlation!=null){data.putIntArray("correlation",SignalChain.pack(f.correlation.values()));data.putDouble("lagSpan",f.correlation.lagSpan());data.putDouble("peakLag",f.correlation.peakLag());data.putDouble("peakValue",f.correlation.peakValue());}
             if(!rootSource&&device.processor().demodulate()&&f.units.equals("u"))data.putString("decoded",device.processor().modulation().equals("urz")||device.processor().modulation().equals("unrz")?SignalChain.decodeUnipolar(f.samples,engine.span,device.processor().symbolHz(),local.lab().amplitudeOne(),local.duty(),device.processor().modulation().equals("urz")):SignalChain.decodeBpsk(f.samples,engine.span,device.processor().oscillatorHz(),device.processor().symbolHz()));
         }catch(IllegalArgumentException e){data.putBoolean("connected",false);data.putString("fault",e.getMessage());}

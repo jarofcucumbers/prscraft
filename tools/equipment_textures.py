@@ -22,7 +22,7 @@ for y in range(7,27,4):d.line((8,y,24,y),fill='#17232d');d.line((8,y+1,24,y+1),f
 save(im,'instrument_vents')
 for name,base in [('socket_dark',(30,40,48)),('socket_a',(183,104,47)),('socket_b',(53,122,177)),('socket_out',(65,156,98))]:
  im=panel(base);d=ImageDraw.Draw(im);d.rectangle((8,8,23,23),outline='#17232d',width=2);d.rectangle((11,11,20,20),outline='#b8c9cf');d.rectangle((14,14,17,17),fill='#17232d');save(im,name)
-units={'transmitter':('TX','#64dfab'),'bit_generator':('BIT','#ef8c72'),'amplifier':('AMP','#f0af59'),'frequency_filter':('FLT','#75cfea'),'modulator':('MOD','#c29af3'),'adder':('SUM','#edcf64'),'integrator':('INT','#eea4ca'),'correlator':('COR','#8ddca2'),'time_gate':('GATE','#e98887'),'delay_line':('DLY','#91a9eb')}
+units={'gray_converter':('GRAY','#8be2ce'),'transmitter':('TX','#64dfab'),'bit_generator':('BIT','#ef8c72'),'amplifier':('AMP','#f0af59'),'frequency_filter':('FLT','#75cfea'),'modulator':('MOD','#c29af3'),'adder':('SUM','#edcf64'),'integrator':('INT','#eea4ca'),'correlator':('COR','#8ddca2'),'time_gate':('GATE','#e98887'),'delay_line':('DLY','#91a9eb')}
 for name,(label,accent) in units.items():
  im=panel((32,44,54));d=ImageDraw.Draw(im);d.rectangle((5,5,26,23),fill='#101f29',outline='#607d8a');d.line((6,15,25,15),fill='#28404c');d.line((15,6,15,22),fill='#28404c')
  points=[]
@@ -80,7 +80,15 @@ for path in (root/'models/block').glob('*.json'):
    for face in element.get('faces',{}).values():
     if face['texture']=='#accent':face['uv']=[0,0,16,16]
   if name in ['adder','correlator']:
-   for face in model['elements'][-1]['faces'].values():face['texture']='#socket_b'
+   for element in model['elements']:
+    if element['from'][0]==0 and element['to'][0]==1:
+     for face in element['faces'].values():face['texture']='#socket_b'
+ if name in units and name not in ['transmitter','bit_generator']:
+  if not any(e['from']==[6,0,0] and e['to']==[10,2,1] for e in model['elements']):
+   model['elements'].append({'from':[6,0,0],'to':[10,2,1],'faces':{f:{'texture':'#output','uv':[0,0,16,16]} for f in ['north','south','east','west','up','down']}})
  path.write_text(json.dumps(model,indent=2)+'\n')
 for medium in ['coaxial','fiber','metallic']:
  path=root/f'models/item/{medium}_cable.json';model=json.loads(path.read_text());model['textures']={'cable':f'prscraft:block/{medium}_jacket','particle':f'prscraft:block/{medium}_jacket'};path.write_text(json.dumps(model,indent=2)+'\n')
+# Distinct Gray-code paper profile in the template item selector.
+im=Image.new('RGBA',(32,32));d=ImageDraw.Draw(im);d.rectangle((3,1,28,30),fill='#e4e7d8',outline='#7f9b91');d.rectangle((4,2,27,9),fill='#3b9d8b');d.text((6,1),'GRAY',font=font,fill='#e4fff3');d.text((5,11),'1011',font=font,fill='#294c4a');d.line((9,21,23,21),fill='#4b8772');d.text((5,22),'1110',font=font,fill='#294c4a');(root/'textures/item').mkdir(exist_ok=True);im.save(root/'textures/item/gray_template.png')
+(root/'models/item/template_12.json').write_text(json.dumps({'parent':'minecraft:item/generated','textures':{'layer0':'prscraft:item/gray_template'}},indent=2)+'\n')

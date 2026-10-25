@@ -28,6 +28,7 @@ public final class PRSCraft {
     public static final DeferredItem<BoardEraserItem> ERASER=ITEMS.register("board_eraser",()->new BoardEraserItem(new Item.Properties().durability(BoardEraserItem.CAPACITY).setNoRepair()));
     static {ITEMS.registerSimpleBlockItem(BOARD);for(int i=0;i<BoardPixels.COLORS.length;i++){final int palette=i+1;CHALKS.add(ITEMS.register(BoardPixels.COLORS[i]+"_chalk",()->new ChalkItem(new Item.Properties().durability(ChalkItem.CAPACITY).setNoRepair(),palette)));}}
     public static final java.util.List<DeferredBlock<CableBlock>> CABLES=new java.util.ArrayList<>();
+    public static final DeferredBlock<ProcessorBlock> GRAY=BLOCKS.register("gray_converter",()->new ProcessorBlock("gray_converter",BlockBehaviour.Properties.of().strength(3)));
     public static final DeferredBlock<ProcessorBlock> ADDER=BLOCKS.register("adder",()->new ProcessorBlock("adder",BlockBehaviour.Properties.of().strength(3)));
     public static final DeferredBlock<ProcessorBlock> INTEGRATOR=BLOCKS.register("integrator",()->new ProcessorBlock("integrator",BlockBehaviour.Properties.of().strength(3)));
     public static final DeferredBlock<ProcessorBlock> CORRELATOR=BLOCKS.register("correlator",()->new ProcessorBlock("correlator",BlockBehaviour.Properties.of().strength(3)));
@@ -36,7 +37,7 @@ public final class PRSCraft {
     public static final DeferredItem<CableWrenchItem> WRENCH=ITEMS.register("cable_wrench",()->new CableWrenchItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<Item> DATA_CARD=ITEMS.registerSimpleItem("data_card",new Item.Properties().stacksTo(1));
     static {
-        ITEMS.registerSimpleBlockItem(ADDER);ITEMS.registerSimpleBlockItem(INTEGRATOR);ITEMS.registerSimpleBlockItem(CORRELATOR);ITEMS.registerSimpleBlockItem(TIME_GATE);ITEMS.registerSimpleBlockItem(DELAY);ITEMS.registerSimpleBlockItem(TRANSMITTER);ITEMS.registerSimpleBlockItem(BIT_GENERATOR); ITEMS.registerSimpleBlockItem(AMPLIFIER); ITEMS.registerSimpleBlockItem(FILTER); ITEMS.registerSimpleBlockItem(MODULATOR);
+        ITEMS.registerSimpleBlockItem(GRAY);ITEMS.registerSimpleBlockItem(ADDER);ITEMS.registerSimpleBlockItem(INTEGRATOR);ITEMS.registerSimpleBlockItem(CORRELATOR);ITEMS.registerSimpleBlockItem(TIME_GATE);ITEMS.registerSimpleBlockItem(DELAY);ITEMS.registerSimpleBlockItem(TRANSMITTER);ITEMS.registerSimpleBlockItem(BIT_GENERATOR); ITEMS.registerSimpleBlockItem(AMPLIFIER); ITEMS.registerSimpleBlockItem(FILTER); ITEMS.registerSimpleBlockItem(MODULATOR);
         for (SignalBudget.Medium medium : SignalBudget.Medium.values()) {
             String name = medium.name().toLowerCase(java.util.Locale.ROOT) + "_port";
             var block = BLOCKS.register(name, () -> new PortBlock(medium,
@@ -49,7 +50,7 @@ public final class PRSCraft {
     }
     public static final DeferredRegister<BlockEntityType<?>> ENTITIES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, ID);
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RadioBlockEntity>> RADIO_ENTITY =
-        ENTITIES.register("radio", () -> BlockEntityType.Builder.of(RadioBlockEntity::new, TRANSMITTER.get(),AMPLIFIER.get(),FILTER.get(),MODULATOR.get(),BIT_GENERATOR.get(),ADDER.get(),INTEGRATOR.get(),CORRELATOR.get(),TIME_GATE.get(),DELAY.get()).build(null));
+        ENTITIES.register("radio", () -> BlockEntityType.Builder.of(RadioBlockEntity::new, TRANSMITTER.get(),AMPLIFIER.get(),FILTER.get(),MODULATOR.get(),BIT_GENERATOR.get(),ADDER.get(),INTEGRATOR.get(),CORRELATOR.get(),TIME_GATE.get(),DELAY.get(),GRAY.get()).build(null));
     public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<CableBlockEntity>> CABLE_ENTITY=ENTITIES.register("cable",()->BlockEntityType.Builder.of(CableBlockEntity::new,CABLES.stream().map(DeferredBlock::get).toArray(Block[]::new)).build(null));
     public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<DrawingBoardEntity>> BOARD_ENTITY=ENTITIES.register("drawing_board",()->BlockEntityType.Builder.of(DrawingBoardEntity::new,BOARD.get()).build(null));
     public static final DeferredRegister<net.minecraft.world.inventory.MenuType<?>> MENUS=DeferredRegister.create(Registries.MENU,ID);

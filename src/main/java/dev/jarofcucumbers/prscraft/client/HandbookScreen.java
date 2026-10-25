@@ -5,18 +5,18 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 public final class HandbookScreen extends PanelScreen {
-    private final Screen parent;private int page;private boolean contents=true;
+    private final Screen parent;private int page,contentsPage;private boolean contents=true;
     public HandbookScreen(Screen parent){super(Component.translatable("item.prscraft.handbook"),720,560);this.parent=parent;}
     private void refresh(){clearWidgets();build();}
     @Override protected void build(){
         button(14,526,110,tr("back"),b->onClose());button(132,526,150,tr("contents"),b->{contents=!contents;refresh();});
-        if(contents){for(int i=0;i<HandbookContent.PAGES.size();i++){final int index=i;var p=HandbookContent.PAGES.get(i);button(14+(i/10)*234,64+(i%10)*38,220,Component.translatable("book.prscraft."+p.id()+".title"),b->{page=index;contents=false;refresh();});}}
+        if(contents){button(460,526,110,Component.literal("←"),b->{contentsPage=Math.floorMod(contentsPage-1,(HandbookContent.PAGES.size()+29)/30);refresh();});button(582,526,110,Component.literal("→"),b->{contentsPage=(contentsPage+1)%((HandbookContent.PAGES.size()+29)/30);refresh();});for(int i=contentsPage*30;i<Math.min(HandbookContent.PAGES.size(),(contentsPage+1)*30);i++){final int index=i;var p=HandbookContent.PAGES.get(i);button(14+((i%30)/10)*234,64+(i%10)*38,220,Component.translatable("book.prscraft."+p.id()+".title"),b->{page=index;contents=false;refresh();});}}
         else {button(460,526,110,Component.literal("←"),b->{page=Math.floorMod(page-1,HandbookContent.PAGES.size());});button(582,526,110,Component.literal("→"),b->{page=(page+1)%HandbookContent.PAGES.size();});}
     }
     @Override public void onClose(){minecraft.setScreen(parent);}
     @Override protected void draw(GuiGraphics g){
         g.drawString(font,"PRSCraft "+HandbookContent.VERSION,520,10,0xff9bd7ec,false);
-        if(contents){label(g,"book_intro",18,42);return;}
+        if(contents){label(g,"book_intro",18,42);g.drawString(font,(contentsPage+1)+" / "+((HandbookContent.PAGES.size()+29)/30),332,532,0xffbacbdb,false);return;}
         var content=HandbookContent.PAGES.get(page);
         g.drawString(font,Component.translatable("book.prscraft."+content.id()+".title"),18,45,0xfff2d494,false);
         g.drawWordWrap(font,Component.translatable("book.prscraft."+content.id()+".body"),18,78,320,0xffd5e1ed);
@@ -30,6 +30,10 @@ public final class HandbookScreen extends PanelScreen {
         g.drawString(font,(page+1)+" / "+HandbookContent.PAGES.size(),330,532,0xffbacbdb,false);
     }
     private void diagram(GuiGraphics g,String kind){
+        if(kind.equals("gray")){
+            g.drawString(font,"Binary    →    Gray",390,105,0xffb2eddb,false);
+            String[] b={"00","01","10","11"},v={"00","01","11","10"};for(int i=0;i<4;i++)g.drawString(font,b[i]+"        →        "+v[i],410,145+i*30,0xffb2eddb,false);return;
+        }
         if(kind.equals("equipment")){
             var blocks=new net.minecraft.world.item.Item[]{PRSCraft.TRANSMITTER.get().asItem(),PRSCraft.AMPLIFIER.get().asItem(),PRSCraft.CORRELATOR.get().asItem()};
             for(int i=0;i<3;i++){g.pose().pushPose();g.pose().translate(392+i*100,135,0);g.pose().scale(3,3,1);g.renderItem(new ItemStack(blocks[i]),0,0);g.pose().popPose();}

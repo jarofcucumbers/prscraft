@@ -69,6 +69,12 @@
         "prscraft:profile": 11
       },
       "model": "prscraft:item/template_11"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 12
+      },
+      "model": "prscraft:item/template_12"
     }
   ]
 }

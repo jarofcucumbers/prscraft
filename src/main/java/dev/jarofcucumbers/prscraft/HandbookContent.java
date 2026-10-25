@@ -3,7 +3,7 @@ import java.util.*;
 /** Handbook pages are part of the feature contract; update with every user-facing change. */
 public final class HandbookContent {
     private HandbookContent(){}
-    public static final String VERSION="0.7.0";
+    public static final String VERSION="0.7.1";
     public record Page(String id,String diagram,List<String> formulas){}
     public static final List<Page> PAGES=List.of(
         new Page("workflow","chain",List.of("TX → port → cable → port → RX","cables: 1 m by default; wrench adjusts length","A_RX = A_TX · 10^((Ptx−20−loss)/20)")),
@@ -35,9 +35,10 @@ public final class HandbookContent {
         new Page("challenges_more","equipment",List.of("amplifier energy ratio ≥ 4; autocorrelation peak > 0.99","≥6 active devices; ≥100 m cable; ≥4 tones")),
         new Page("learning_tx","sampling",List.of("sampled → quantized → L ≥ 256","Bernoulli: 0.75 ≤ P1 < 1")),
         new Page("learning_rx","urz",List.of("UNRZ / URZ: match Rb, duty and received A","W: average power; J: finite sequence energy")),
+        new Page("gray","gray",List.of("Gray: g = b XOR (b >> 1)","inverse: b[i] = b[i−1] XOR g[i]; b[0]=g[0]","level index: round((x−min)·(L−1)/(max−min))")),
         new Page("limits","chain",List.of("≤16 depth · ≤32 active nodes · ≤512 nodes per segment","finite-window simulation, not a real-time RF solver"))
     );
-    private static final Set<String> EQUIPMENT=Set.of("transmitter","coaxial_port","fiber_port","metallic_port","coaxial_cable","fiber_cable","metallic_cable","amplifier","frequency_filter","modulator","bit_generator","line_analyzer","signal_template","data_card","handbook","adder","integrator","correlator","time_gate","delay_line","cable_wrench","drawing_board","board_eraser");
+    private static final Set<String> EQUIPMENT=Set.of("transmitter","coaxial_port","fiber_port","metallic_port","coaxial_cable","fiber_cable","metallic_cable","amplifier","frequency_filter","modulator","bit_generator","line_analyzer","signal_template","data_card","handbook","adder","integrator","correlator","time_gate","delay_line","cable_wrench","gray_converter","drawing_board","board_eraser");
     public static final Set<String> COVERED_ITEMS;
     static {var items=new HashSet<>(EQUIPMENT);for(String color:BoardPixels.COLORS)items.add(color+"_chalk");COVERED_ITEMS=Set.copyOf(items);}
 }

@@ -233,6 +233,7 @@ public final class RadioGameTests {
 
     @GameTest(template="empty",timeoutTicks=20)
     public static void boardPixelCostsEmptyEraserAndSerialization(GameTestHelper h){
+        h.assertTrue(h.getLevel().getRecipeManager().byKey(ResourceLocation.fromNamespaceAndPath(PRSCraft.ID,"chalk_from_calcite")).isPresent(),"Calcite chalk recipe must load successfully");
         var pos=new BlockPos(2,1,2);h.setBlock(pos,PRSCraft.BOARD.get());DrawingBoardEntity board=h.getBlockEntity(pos);
         var chalk=new net.minecraft.world.item.ItemStack(PRSCraft.CHALKS.get(0).get());chalk.setDamageValue(4092);
         h.assertTrue(BoardTools.apply(board,chalk,BoardPixels.brush(64,64,16))==4&&chalk.isEmpty(),"Last chalk must draw only its four remaining pixels and break");
@@ -328,5 +329,51 @@ public final class RadioGameTests {
         tx.configure(new RadioSettings("sin(10)",100,16,true,true,false,0,100,20,true,.5,"bits","10110010",10,lab));
         var goals=ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(RX)));h.assertTrue(goals.containsAll(java.util.Set.of("finite_burst","offset_scan","energy_source")),"Finite J burst and offset must qualify on a real received waveform");
         h.setBlock(CORNER,Blocks.AIR);h.assertTrue(ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(RX))).isEmpty(),"No learning goals may be earned from a disconnected RX");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void grayConverterRoundTripsThroughRealPortsAndPersists(GameTestHelper h){
+        pairSetup(h,"gray_converter");RadioBlockEntity source=h.getBlockEntity(PA),converter=h.getBlockEntity(DSP),receiver=h.getBlockEntity(PR);
+        source.configure(new RadioSettings("sin(10)",100,16,true,true,false,0,100,20,true,1,"bits","10110010",10));
+        var first=RadioCapture.capture(h.getLevel(),h.absolutePos(DSP));h.assertTrue(first.getBoolean("connected")&&first.getString("grayOutput").equals("11100011"),"Physical converter must encode received bits in four-bit words");
+        h.setBlock(PR,PRSCraft.GRAY.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.NORTH));RadioBlockEntity reverse=h.getBlockEntity(PR);
+        reverse.configureGray(new GraySettings("gray_to_binary",4,10,0,-1,1,16,-1,1,100));var roundTrip=RadioCapture.capture(h.getLevel(),h.absolutePos(PR));h.assertTrue(roundTrip.getString("grayOutput").equals("10110010"),"Two converters must round-trip through lossy physical segments");
+        var restored=new RadioBlockEntity(reverse.getBlockPos(),reverse.getBlockState());restored.loadWithComponents(reverse.saveWithFullMetadata(h.getLevel().registryAccess()),h.getLevel().registryAccess());h.assertTrue(restored.gray().equals(reverse.gray()),"Gray settings must survive world reload");
+        var template=new net.minecraft.nbt.CompoundTag();template.putString("kind","gray_converter");template.put("settings",reverse.settings().save());template.put("processor",reverse.processor().save());template.put("gray",reverse.gray().save());var paper=new net.minecraft.world.item.ItemStack(PRSCraft.TEMPLATE.get());paper.set(net.minecraft.core.component.DataComponents.CUSTOM_DATA,net.minecraft.world.item.component.CustomData.of(template));converter.media.setStackInSlot(0,paper);h.assertTrue(converter.gray().equals(reverse.gray()),"Template slot must apply Gray direction and timing");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void quantizedSourceFeedsGrayLevelEncoder(GameTestHelper h){
+        pairSetup(h,"gray_converter");RadioBlockEntity source=h.getBlockEntity(PA),converter=h.getBlockEntity(DSP);
+        source.configure(new RadioSettings("sin(10)",100,4,true,true,false,0,100,20,true,1,"quantized","10",10));
+        double gain=Math.pow(10,-2.4/20);converter.configureGray(new GraySettings("levels_to_gray",2,10,0,-1,1,4,-gain,gain,100));
+        var capture=RadioCapture.capture(h.getLevel(),h.absolutePos(DSP));h.assertTrue(capture.getBoolean("connected")&&!capture.getString("grayInput").isEmpty()&&!capture.getString("grayOutput").isEmpty(),"Quantized source must produce serial Gray words through actual attenuation");
+        String[] indices=capture.getString("grayInput").split(",");StringBuilder expected=new StringBuilder();for(String index:indices)expected.append(GrayCodec.word(GrayCodec.encode(Integer.parseInt(index)),2));h.assertTrue(expected.toString().equals(capture.getString("grayOutput")),"Every detected quantization level must use its Gray label");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void allDevicePortRolesAndRotatedPortConnections(GameTestHelper h){
+        var pos=new BlockPos(3,1,3);
+        for(var item:PRSCraft.BLOCKS.getEntries())if(item.get() instanceof ProcessorBlock block)for(var front:net.minecraft.core.Direction.Plane.HORIZONTAL){
+            h.setBlock(pos,block.defaultBlockState().setValue(TransmitterBlock.FACING,front));RadioBlockEntity device=h.getBlockEntity(pos);
+            for(var side:net.minecraft.core.Direction.values()){
+                String expected=side==front?"OUT":side==front.getOpposite()?"A":(block.kind.equals("adder")||block.kind.equals("correlator"))&&side==front.getCounterClockWise()?"B":"unused";
+                h.assertTrue(AnalyzerService.role(device,side).equals(expected),"Port role mismatch: "+block.kind+" facing "+front+" side "+side);
+            }
+        }
+        setup(h);for(var facing:net.minecraft.core.Direction.values()){
+            var port=block("coaxial_port").defaultBlockState().setValue(PortBlock.FACING,facing);h.setBlock(new BlockPos(2,1,1),port);
+            h.assertTrue(RadioCapture.capture(h.getLevel(),h.absolutePos(RX)).getBoolean("connected"),"Port rotation must retain passive connectivity");
+            h.assertTrue(!port.getShape(h.getLevel(),h.absolutePos(new BlockPos(2,1,1))).isEmpty(),"Each port orientation needs a matching selection shape");
+        }h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=40)
+    public static void everyProcessorRoutesInEveryHorizontalOrientation(GameTestHelper h){
+        var center=new BlockPos(3,1,3);
+        for(var holder:PRSCraft.BLOCKS.getEntries())if(holder.get() instanceof ProcessorBlock processor)for(var front:net.minecraft.core.Direction.Plane.HORIZONTAL){
+            for(var d:net.minecraft.core.Direction.Plane.HORIZONTAL)for(int step=1;step<=2;step++)h.setBlock(center.relative(d,step),Blocks.AIR);
+            h.setBlock(center,processor.defaultBlockState().setValue(TransmitterBlock.FACING,front));
+            var source=center.relative(front.getOpposite(),2);h.setBlock(source,PRSCraft.TRANSMITTER.get());((RadioBlockEntity)h.getBlockEntity(source)).configure(cleanSource("sin(10)"));h.setBlock(center.relative(front.getOpposite()),block("coaxial_port"));
+            var rx=center.relative(front,2);h.setBlock(rx,PRSCraft.TRANSMITTER.get());((RadioBlockEntity)h.getBlockEntity(rx)).configure(cleanRx());h.setBlock(center.relative(front),block("coaxial_port"));
+            if(processor.kind.equals("adder")||processor.kind.equals("correlator")){var side=front.getCounterClockWise();var b=center.relative(side,2);h.setBlock(b,PRSCraft.TRANSMITTER.get());((RadioBlockEntity)h.getBlockEntity(b)).configure(cleanSource("cos(10)"));h.setBlock(center.relative(side),block("coaxial_port"));}
+            var result=RadioCapture.capture(h.getLevel(),h.absolutePos(rx));h.assertTrue(result.getBoolean("connected")&&result.getString("pipeline").contains(processor.kind),"Wrong real input/output route for "+processor.kind+" facing "+front+": "+result.getString("fault"));
+        }h.succeed();
     }
 }

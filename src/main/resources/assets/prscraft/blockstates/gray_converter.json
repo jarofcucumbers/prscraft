@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "prscraft:block/gray_converter",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "prscraft:block/gray_converter",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "prscraft:block/gray_converter",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "prscraft:block/gray_converter",
+      "y": 270
+    }
+  }
+}
