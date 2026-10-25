@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "SSS",
+    "SCS",
+    "SSS"
+  ],
+  "key": {
+    "S": {
+      "tag": "minecraft:planks"
+    },
+    "C": {
+      "item": "minecraft:green_dye"
+    }
+  },
+  "result": {
+    "id": "prscraft:drawing_board"
+  }
+}

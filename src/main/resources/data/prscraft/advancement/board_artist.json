@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:root",
+  "display": {
+    "icon": {
+      "id": "prscraft:drawing_board"
+    },
+    "title": {
+      "translate": "advancements.prscraft.board_artist.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.board_artist.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

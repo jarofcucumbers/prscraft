@@ -9,9 +9,9 @@ public record ProcessorSettings(double gainDb, double lowHz, double highHz, Stri
     public ProcessorSettings {
         if(!Double.isFinite(gainDb)||gainDb < -40||gainDb > 60)throw new IllegalArgumentException("gain");
         if(!Double.isFinite(lowHz)||!Double.isFinite(highHz)||lowHz<0||highHz<=lowHz||highHz>20000)throw new IllegalArgumentException("filter");
-        if(!Set.of("am","bpsk").contains(modulation))throw new IllegalArgumentException("modulation");
+        if(!Set.of("am","bpsk","unrz","urz").contains(modulation))throw new IllegalArgumentException("modulation");
         if(!Double.isFinite(oscillatorHz)||oscillatorHz<1||oscillatorHz>10000||!Double.isFinite(symbolHz)||symbolHz<1||symbolHz>1000)throw new IllegalArgumentException("oscillator");
-        if((modulation.equals("bpsk")||demodulate)&&(oscillatorHz<2*symbolHz||oscillatorHz>16*symbolHz))throw new IllegalArgumentException("bpsk_clock");
+        if(modulation.equals("bpsk")&&(oscillatorHz<2*symbolHz||oscillatorHz>16*symbolHz))throw new IllegalArgumentException("bpsk_clock");
         if(!Double.isFinite(depth)||depth<0||depth>1)throw new IllegalArgumentException("depth");
     }
     public CompoundTag save() {

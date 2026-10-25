@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:correlation",
+  "display": {
+    "icon": {
+      "id": "prscraft:delay_line"
+    },
+    "title": {
+      "translate": "advancements.prscraft.delay_hunt.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.delay_hunt.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

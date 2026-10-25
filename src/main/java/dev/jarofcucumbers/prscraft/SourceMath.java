@@ -2,11 +2,13 @@ package dev.jarofcucumbers.prscraft;
 import java.util.*;
 public final class SourceMath {
     private SourceMath(){}
-    public static double reference(String mode,String expression,String bits,double bitRate,double sampleRate,LabSettings lab){
+    public static double reference(String mode,String expression,String bits,double bitRate,double sampleRate,LabSettings lab){return reference(mode,expression,bits,bitRate,sampleRate,lab,1);}
+    public static double reference(String mode,String expression,String bits,double bitRate,double sampleRate,LabSettings lab,double duty){
         double square=0,duration=1;
         if(mode.equals("bits")){
-            if(lab.randomBits())square=(1-lab.probabilityOne())*lab.amplitudeZero()*lab.amplitudeZero()+lab.probabilityOne()*lab.amplitudeOne()*lab.amplitudeOne();
-            else {for(char c:bits.toCharArray()){double a=c=='1'?lab.amplitudeOne():lab.amplitudeZero();square+=a*a;}square/=bits.length();}
+            if(lab.randomBits())square=(1-lab.probabilityOne())*Math.pow(lab.lineCode().equals("bipolar")?lab.amplitudeZero():0,2)+lab.probabilityOne()*lab.amplitudeOne()*lab.amplitudeOne();
+            else {for(char c:bits.toCharArray()){double a=c=='1'?lab.amplitudeOne():lab.lineCode().equals("bipolar")?lab.amplitudeZero():0;square+=a*a;}square/=bits.length();}
+            if(lab.lineCode().equals("urz"))square*=duty;
             duration=bits.length()/bitRate;
         }else if(mode.equals("discrete")){
             double[] values=LabSettings.parseSamples(lab.samples());for(double value:values)square+=value*value;square/=values.length;duration=values.length/sampleRate;
@@ -25,7 +27,7 @@ public final class SourceMath {
     }
     public static double scale(RadioSettings s){
         if(s.lab().quantity().equals("relative"))return 1;
-        double reference=reference(s.signalMode(),s.expression(),s.bits(),s.bitRate(),s.sampleHz(),s.lab());
+        double reference=reference(s.signalMode(),s.expression(),s.bits(),s.bitRate(),s.sampleHz(),s.lab(),s.duty());
         return reference==0?0:Math.sqrt(s.lab().target()/reference);
     }
     /** Counter-based reproducible Bernoulli sequence: changing the preview grid does not change bits. */

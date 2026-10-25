@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:math_lab",
+  "display": {
+    "icon": {
+      "id": "prscraft:time_gate"
+    },
+    "title": {
+      "translate": "advancements.prscraft.timing_lab.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.timing_lab.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

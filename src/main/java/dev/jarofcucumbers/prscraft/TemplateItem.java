@@ -39,9 +39,9 @@ public final class TemplateItem extends Item {
             if(source){
                 lines.add(Component.literal(s.signalMode().equals("bits")?(s.lab().randomBits()?"Bernoulli seed="+s.lab().seed():s.bits()):s.signalMode().equals("discrete")?s.lab().samples():s.expression()).withStyle(ChatFormatting.GRAY));
                 if(s.signalMode().equals("sampled")||s.signalMode().equals("quantized"))lines.add(Component.literal("fvz="+s.sampleHz()+" Hz · L="+s.levels()).withStyle(ChatFormatting.GRAY));
-                if(s.signalMode().equals("bits"))lines.add(Component.literal("A0="+s.lab().amplitudeZero()+" · A1="+s.lab().amplitudeOne()+" · P1="+s.lab().probabilityOne()).withStyle(ChatFormatting.GRAY));
+                if(s.signalMode().equals("bits"))lines.add(Component.literal(s.lab().lineCode().toUpperCase()+" · A0="+(s.lab().lineCode().equals("bipolar")?s.lab().amplitudeZero():0)+" · A1="+s.lab().amplitudeOne()+" · P1="+s.lab().probabilityOne()).withStyle(ChatFormatting.GRAY));
                 if(!s.lab().quantity().equals("relative"))lines.add(Component.literal(s.lab().target()+" "+(s.lab().quantity().equals("energy")?"J":"W")).withStyle(ChatFormatting.GRAY));
-            }else if(kind.equals("radio"))lines.add(Component.literal("AWGN μ="+s.lab().noiseMean()+" · σ²="+s.lab().noiseVariance()).withStyle(ChatFormatting.GRAY));
+            }else if(kind.equals("radio")){lines.add(Component.literal("AWGN μ="+s.lab().noiseMean()+" · σ²="+s.lab().noiseVariance()).withStyle(ChatFormatting.GRAY));if(p.demodulate())lines.add(Component.literal(p.modulation().toUpperCase()+" · "+p.symbolHz()+" bit/s · A_RX="+s.lab().amplitudeOne()).withStyle(ChatFormatting.GRAY));}
             if(kind.equals("modulator"))lines.add(Component.literal(p.modulation().equals("bpsk")?"Rb="+p.symbolHz()+" symbol/s":"AM m="+p.depth()).withStyle(ChatFormatting.GRAY));
             lines.add(Component.translatable("tooltip.prscraft.graph_layers",Integer.bitCount(tag.getInt("graphLayers")&15),Integer.bitCount(tag.getInt("graphTerms")&255)).withStyle(ChatFormatting.GRAY));
             lines.add(Component.translatable("tooltip.prscraft.template_apply").withStyle(ChatFormatting.YELLOW));

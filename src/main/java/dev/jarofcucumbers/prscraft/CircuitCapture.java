@@ -113,7 +113,7 @@ public final class CircuitCapture{
                 if(n.a==null){var source=n.device.settings().save();source.putString("position",n.device.getBlockPos().toShortString());sources.add(source);}}
             data.put("sources",sources);data.putDouble("wireMetres",cables.stream().mapToDouble(c->CircuitNetwork.cable(level,c).metres()).sum());data.putInt("cables",cables.size());
             if(f.correlation!=null){data.putIntArray("correlation",SignalChain.pack(f.correlation.values()));data.putDouble("lagSpan",f.correlation.lagSpan());data.putDouble("peakLag",f.correlation.peakLag());data.putDouble("peakValue",f.correlation.peakValue());}
-            if(!rootSource&&device.processor().demodulate()&&f.units.equals("u"))data.putString("decoded",SignalChain.decodeBpsk(f.samples,engine.span,device.processor().oscillatorHz(),device.processor().symbolHz()));
+            if(!rootSource&&device.processor().demodulate()&&f.units.equals("u"))data.putString("decoded",device.processor().modulation().equals("urz")||device.processor().modulation().equals("unrz")?SignalChain.decodeUnipolar(f.samples,engine.span,device.processor().symbolHz(),local.lab().amplitudeOne(),local.duty(),device.processor().modulation().equals("urz")):SignalChain.decodeBpsk(f.samples,engine.span,device.processor().oscillatorHz(),device.processor().symbolHz()));
         }catch(IllegalArgumentException e){data.putBoolean("connected",false);data.putString("fault",e.getMessage());}
         return data;
     }

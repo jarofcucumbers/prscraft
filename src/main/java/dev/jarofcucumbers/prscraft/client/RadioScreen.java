@@ -18,7 +18,7 @@ public final class RadioScreen extends Screen {
     private CompoundTag snapshot;
     private RadioSettings saved;
     private EditBox expression, sample, levels, duty, power, carrier, noise, bits, bitRate, oscillator;
-    private String signalMode;
+    private String signalMode,decodeMode;
     private ProcessorSettings decoder;
     private boolean demodulate;
     private int sentView, viewTicks;
@@ -36,7 +36,7 @@ public final class RadioScreen extends Screen {
     public RadioScreen(BlockPos pos, CompoundTag data) {
         super(Component.translatable("screen.prscraft.title")); this.pos = pos; this.snapshot = data; this.recorded=data.getBoolean("recorded");
         saved = RadioSettings.read(data.getCompound("settings"));
-        signalMode=saved.signalMode();decoder=ProcessorSettings.read(data.getCompound("processor"));demodulate=decoder.demodulate();
+        signalMode=saved.signalMode();decoder=ProcessorSettings.read(data.getCompound("processor"));demodulate=decoder.demodulate();decodeMode=demodulate?(java.util.Set.of("unrz","urz").contains(decoder.modulation())?decoder.modulation():"bpsk"):"raw";
         int layers=data.contains("graphLayers")?data.getInt("graphLayers"):15;
         showSum=(layers&1)!=0;showSample=(layers&2)!=0;showQuant=(layers&4)!=0;showRx=(layers&8)!=0;frozen=(layers&16)!=0;
         int terms=data.contains("graphTerms")?data.getInt("graphTerms"):255;for(int i=0;i<8;i++)showTerm[i]=(terms&(1<<i))!=0;
@@ -86,7 +86,7 @@ public final class RadioScreen extends Screen {
         bitRate=field(340,170,80,rateText,"bit_rate");oscillator=field(432,170,84,oscText,"oscillator");
         stageButton=button(14,170,130,Component.empty(),b->{
             if(transmit){String[] modes={"analog","sampled","quantized","bits","discrete"};int i=java.util.Arrays.asList(modes).indexOf(signalMode);signalMode=modes[(i+1)%modes.length];}
-            else demodulate=!demodulate;
+            else {String[] modes={"raw","bpsk","unrz","urz"};decodeMode=modes[(java.util.Arrays.asList(modes).indexOf(decodeMode)+1)%modes.length];demodulate=!decodeMode.equals("raw");}
             serverError="";visibility();
         });
         button(528,170,178,tr("media"),b->{flushView();var tag=new CompoundTag();tag.putString("action","media");PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,tag));});
@@ -107,23 +107,23 @@ public final class RadioScreen extends Screen {
     private void visibility(){
         boolean waveform=transmit&&!signalMode.equals("bits")&&!signalMode.equals("discrete");
         boolean sampling=waveform&&!signalMode.equals("analog");
-        expression.visible=waveform;sample.visible=sampling||transmit&&signalMode.equals("discrete");levels.visible=sampling&&signalMode.equals("quantized");duty.visible=sampling;
+        expression.visible=waveform;sample.visible=sampling||transmit&&signalMode.equals("discrete");levels.visible=sampling&&signalMode.equals("quantized");duty.visible=sampling||transmit&&signalMode.equals("bits")&&saved.lab().lineCode().equals("urz")||!transmit&&decodeMode.equals("urz");
         power.visible=transmit&&saved.lab().quantity().equals("relative");noise.visible=!transmit;kindButton.visible=sampling;physicalButton.visible=!transmit;
-        bits.visible=transmit&&signalMode.equals("bits")&&!saved.lab().randomBits();bitRate.visible=transmit&&signalMode.equals("bits")||!transmit&&demodulate;oscillator.visible=!transmit&&demodulate;
+        bits.visible=transmit&&signalMode.equals("bits")&&!saved.lab().randomBits();bitRate.visible=transmit&&signalMode.equals("bits")||!transmit&&demodulate;oscillator.visible=!transmit&&decodeMode.equals("bpsk");
         if(snapshot.getString("kind").equals("bit_generator")){roleButton.active=false;stageButton.active=false;}
-        stageButton.setMessage(transmit?tr("mode_"+signalMode):tr(demodulate?"decode_bpsk":"decode_raw"));
+        stageButton.setMessage(transmit?tr("mode_"+signalMode):tr("decode_"+decodeMode));
     }
     private RadioSettings draft() {
         boolean waveform=transmit&&!signalMode.equals("bits")&&!signalMode.equals("discrete"), sampling=waveform&&!signalMode.equals("analog");
         return new RadioSettings(waveform?expression.getValue():saved.expression(),(sampling||transmit&&signalMode.equals("discrete"))?number(sample):saved.sampleHz(),
             sampling&&signalMode.equals("quantized")?Integer.parseInt(levels.getValue()):saved.levels(),transmit,enabled,thermal,
-            transmit?saved.noiseRms():number(noise),number(carrier),transmit?number(power):saved.powerDbm(),secondKind,sampling?number(duty):saved.duty(),
+            transmit?saved.noiseRms():number(noise),number(carrier),transmit?number(power):saved.powerDbm(),secondKind,duty.visible?number(duty):saved.duty(),
             transmit?signalMode:saved.signalMode(),transmit&&signalMode.equals("bits")?bits.getValue():saved.bits(),
             transmit&&signalMode.equals("bits")?number(bitRate):saved.bitRate(),transmit?saved.lab():saved.lab().variance(number(noise)*number(noise)));
     }
     private ProcessorSettings draftDecoder(){
-        return new ProcessorSettings(decoder.gainDb(),decoder.lowHz(),decoder.highHz(),decoder.modulation(),
-            !transmit&&demodulate?number(oscillator):decoder.oscillatorHz(),!transmit&&demodulate?number(bitRate):decoder.symbolHz(),decoder.depth(),demodulate);
+        return new ProcessorSettings(decoder.gainDb(),decoder.lowHz(),decoder.highHz(),!transmit&&demodulate?decodeMode:decoder.modulation(),
+            !transmit&&decodeMode.equals("bpsk")?number(oscillator):decoder.oscillatorHz(),!transmit&&demodulate?number(bitRate):decoder.symbolHz(),decoder.depth(),demodulate);
     }
     private int viewCode(){int layers=(showSum?1:0)|(showSample?2:0)|(showQuant?4:0)|(showRx?8:0)|(frozen?16:0),terms=0;
         for(int i=0;i<8;i++)if(showTerm[i])terms|=1<<i;return (layers<<8)|terms;}
@@ -201,7 +201,7 @@ public final class RadioScreen extends Screen {
         String state=rx?"RX · "+snapshot.getString("medium")+" · "+fmt(snapshot.getDouble("metres"))+" m · loss "+fmt(snapshot.getDouble("loss"))+" dB · noise σ "+fmt(snapshot.getDouble("sigma")):"TX · "+source.signalMode()+" · "+(enabled?"ON":"OFF");
         g.drawString(font,font.plainSubstrByWidth(state,690),14,432,0xffb9d9e8,false);
         String description=source.signalMode().equals("bits")?(source.lab().randomBits()?"Bernoulli P1="+source.lab().probabilityOne():source.bits())+" @ "+source.bitRate()+" bit/s":source.signalMode().equals("discrete")?source.lab().samples():source.expression();
-        if(rx&&!snapshot.getString("decoded").isEmpty())description+=" · BPSK: "+snapshot.getString("decoded");
+        if(rx&&!snapshot.getString("decoded").isEmpty())description+=" · "+decodeMode.toUpperCase()+": "+snapshot.getString("decoded");
         if(rx&&!snapshot.getString("pipeline").isEmpty())description+=" · "+snapshot.getString("pipeline");
         g.drawString(font,font.plainSubstrByWidth(description,690),14,244,0xffafc1d1,false);
         g.drawString(font,font.plainSubstrByWidth(tr("legend").getString(),690),14,478,0xffa9c9dd,false);

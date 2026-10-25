@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:first_link",
+  "display": {
+    "icon": {
+      "id": "prscraft:frequency_filter"
+    },
+    "title": {
+      "translate": "advancements.prscraft.filter_lab.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.filter_lab.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

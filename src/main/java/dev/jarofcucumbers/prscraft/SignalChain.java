@@ -14,7 +14,7 @@ public final class SignalChain {
             boolean one;
             if(s.lab().randomBits())one=SourceMath.randomBit(s.lab().seed(),symbol,s.lab().probabilityOne());
             else {if(!s.lab().repeat()&&symbol>=s.bits().length())return 0;one=s.bits().charAt((int)(symbol%s.bits().length()))=='1';}
-            value=one?s.lab().amplitudeOne():s.lab().amplitudeZero();
+            value=LineCoding.value(s.lab(),one,t*s.bitRate(),s.duty());
         }else if(s.signalMode().equals("discrete")){
             double[] values=LabSettings.parseSamples(s.lab().samples());long index=(long)Math.floor(t*s.sampleHz()+1e-9);
             if(index<0||!s.lab().repeat()&&index>=values.length)return 0;value=values[(int)(index%values.length)];
@@ -44,7 +44,7 @@ public final class SignalChain {
                 long symbol=(long)Math.floor(t*s.bitRate()+1e-9);
                 if(s.lab().randomBits()||s.lab().repeat()||symbol<s.bits().length()){
                     boolean one=s.lab().randomBits()?SourceMath.randomBit(s.lab().seed(),symbol,s.lab().probabilityOne()):s.bits().charAt((int)(symbol%s.bits().length()))=='1';
-                    value=one?s.lab().amplitudeOne():s.lab().amplitudeZero();
+                    value=LineCoding.value(s.lab(),one,t*s.bitRate(),s.duty());
                 }
             }else if(discrete!=null){long index=(long)Math.floor(t*s.sampleHz()+1e-9);if(s.lab().repeat()||index<discrete.length)value=discrete[(int)(index%discrete.length)];}
             else if(original||s.signalMode().equals("analog"))value=program.at(t);
@@ -62,6 +62,7 @@ public final class SignalChain {
                 case "amplifier" -> {double gain=Math.pow(10,s.gainDb()/20);for(int i=0;i<values.length;i++)values[i]=Math.max(-16,Math.min(16,values[i]*gain));}
                 case "frequency_filter" -> values=bandPass(values,span,s.lowHz(),s.highHz());
                 case "modulator" -> {
+                    if(!java.util.Set.of("bpsk","am").contains(s.modulation()))throw new IllegalArgumentException("modulation");
                     double peak=Arrays.stream(values).map(Math::abs).max().orElse(1);peak=Math.max(1e-12,peak);
                     double[] incoming=values.clone();
                     for(int i=0;i<values.length;i++) {
@@ -96,6 +97,16 @@ public final class SignalChain {
             }}
         }
         if(inverse)for(int i=0;i<n;i++){re[i]/=n;im[i]/=n;}
+    }
+    public static String decodeUnipolar(double[] received,double span,double symbolHz,double amplitude,double duty,boolean rz){
+        if(!Double.isFinite(amplitude)||amplitude<=0)throw new IllegalArgumentException("line_code");
+        int symbols=Math.min(128,(int)Math.floor(span*symbolHz+1e-9));StringBuilder bits=new StringBuilder();
+        for(int symbol=0;symbol<symbols;symbol++){
+            double sum=0;int count=0;
+            for(int i=0;i<received.length;i++){double at=span*i/received.length*symbolHz;double phase=at-Math.floor(at+1e-9);
+                if((int)Math.floor(at+1e-9)==symbol&&(!rz||phase<duty)){sum+=received[i];count++;}}
+            bits.append(count==0?'?':sum/count>=amplitude/2?'1':'0');
+        }return bits.toString();
     }
     public static String decodeBpsk(double[] received,double span,double oscillatorHz,double symbolHz) {
         int symbols=Math.min(128,(int)Math.floor(span*symbolHz+1e-9));StringBuilder bits=new StringBuilder();

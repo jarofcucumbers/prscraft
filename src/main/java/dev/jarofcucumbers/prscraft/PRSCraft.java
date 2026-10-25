@@ -23,6 +23,10 @@ public final class PRSCraft {
     public static final DeferredBlock<BitGeneratorBlock> BIT_GENERATOR=BLOCKS.register("bit_generator",()->new BitGeneratorBlock(BlockBehaviour.Properties.of().strength(3)));
     public static final DeferredItem<HandbookItem> HANDBOOK=ITEMS.register("handbook",()->new HandbookItem(new Item.Properties().stacksTo(1)));
     public static final DeferredItem<TemplateItem> TEMPLATE=ITEMS.register("signal_template",()->new TemplateItem(new Item.Properties().stacksTo(1)));
+    public static final DeferredBlock<DrawingBoardBlock> BOARD=BLOCKS.register("drawing_board",()->new DrawingBoardBlock(BlockBehaviour.Properties.of().strength(2).noOcclusion()));
+    public static final java.util.List<DeferredItem<ChalkItem>> CHALKS=new java.util.ArrayList<>();
+    public static final DeferredItem<BoardEraserItem> ERASER=ITEMS.register("board_eraser",()->new BoardEraserItem(new Item.Properties().durability(512).setNoRepair()));
+    static {ITEMS.registerSimpleBlockItem(BOARD);for(int i=0;i<BoardPixels.COLORS.length;i++){final int palette=i+1;CHALKS.add(ITEMS.register(BoardPixels.COLORS[i]+"_chalk",()->new ChalkItem(new Item.Properties().durability(1024).setNoRepair(),palette)));}}
     public static final java.util.List<DeferredBlock<CableBlock>> CABLES=new java.util.ArrayList<>();
     public static final DeferredBlock<ProcessorBlock> ADDER=BLOCKS.register("adder",()->new ProcessorBlock("adder",BlockBehaviour.Properties.of().strength(3)));
     public static final DeferredBlock<ProcessorBlock> INTEGRATOR=BLOCKS.register("integrator",()->new ProcessorBlock("integrator",BlockBehaviour.Properties.of().strength(3)));
@@ -47,10 +51,13 @@ public final class PRSCraft {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RadioBlockEntity>> RADIO_ENTITY =
         ENTITIES.register("radio", () -> BlockEntityType.Builder.of(RadioBlockEntity::new, TRANSMITTER.get(),AMPLIFIER.get(),FILTER.get(),MODULATOR.get(),BIT_GENERATOR.get(),ADDER.get(),INTEGRATOR.get(),CORRELATOR.get(),TIME_GATE.get(),DELAY.get()).build(null));
     public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<CableBlockEntity>> CABLE_ENTITY=ENTITIES.register("cable",()->BlockEntityType.Builder.of(CableBlockEntity::new,CABLES.stream().map(DeferredBlock::get).toArray(Block[]::new)).build(null));
+    public static final DeferredHolder<BlockEntityType<?>,BlockEntityType<DrawingBoardEntity>> BOARD_ENTITY=ENTITIES.register("drawing_board",()->BlockEntityType.Builder.of(DrawingBoardEntity::new,BOARD.get()).build(null));
     public static final DeferredRegister<net.minecraft.world.inventory.MenuType<?>> MENUS=DeferredRegister.create(Registries.MENU,ID);
     public static final DeferredHolder<net.minecraft.world.inventory.MenuType<?>,net.minecraft.world.inventory.MenuType<PresetMenu>> MEDIA_MENU=
         MENUS.register("media",()->net.neoforged.neoforge.common.extensions.IMenuTypeExtension.create((id,inventory,buf)->
             new PresetMenu(id,inventory,(RadioBlockEntity)inventory.player.level().getBlockEntity(buf.readBlockPos()))));
+    public static final DeferredRegister<net.minecraft.world.item.crafting.RecipeSerializer<?>> RECIPES=DeferredRegister.create(Registries.RECIPE_SERIALIZER,ID);
+    public static final DeferredHolder<net.minecraft.world.item.crafting.RecipeSerializer<?>,net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer<ChalkDyeRecipe>> CHALK_DYE=RECIPES.register("chalk_dye",()->new net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer<>(ChalkDyeRecipe::new));
     private static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, ID);
     static {
         TABS.register("equipment", () -> CreativeModeTab.builder()
@@ -59,5 +66,5 @@ public final class PRSCraft {
             .displayItems((parameters, output) -> ITEMS.getEntries().forEach(item -> output.accept(item.get())))
             .build());
     }
-    public PRSCraft(IEventBus bus) { BLOCKS.register(bus); ITEMS.register(bus); TABS.register(bus); ENTITIES.register(bus); MENUS.register(bus); bus.addListener(RadioNetwork::register); }
+    public PRSCraft(IEventBus bus) { BLOCKS.register(bus); ITEMS.register(bus); TABS.register(bus); ENTITIES.register(bus); MENUS.register(bus); RECIPES.register(bus); bus.addListener(RadioNetwork::register); bus.addListener(BoardNetwork::register); }
 }

@@ -1,0 +1,29 @@
+{
+  "parent": "prscraft:item/board_eraser_0",
+  "overrides": [
+    {
+      "predicate": {
+        "prscraft:wear": 0.25
+      },
+      "model": "prscraft:item/board_eraser_1"
+    },
+    {
+      "predicate": {
+        "prscraft:wear": 0.5
+      },
+      "model": "prscraft:item/board_eraser_2"
+    },
+    {
+      "predicate": {
+        "prscraft:wear": 0.75
+      },
+      "model": "prscraft:item/board_eraser_3"
+    },
+    {
+      "predicate": {
+        "prscraft:wear": 1.0
+      },
+      "model": "prscraft:item/board_eraser_4"
+    }
+  ]
+}

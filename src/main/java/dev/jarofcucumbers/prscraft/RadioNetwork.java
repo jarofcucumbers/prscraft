@@ -52,7 +52,7 @@ public final class RadioNetwork {
         };public Type<? extends CustomPacketPayload> type(){return TYPE;}
     }
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("5");
+        var registrar = event.registrar("6");
         registrar.playToServer(TuneCable.TYPE,TuneCable.CODEC,(request,context)->context.enqueueWork(()->{
             if(!(context.player() instanceof ServerPlayer player))return;
             if(!player.getMainHandItem().is(PRSCraft.WRENCH.get())&&!player.getOffhandItem().is(PRSCraft.WRENCH.get()))return;
@@ -106,6 +106,7 @@ public final class RadioNetwork {
                     RadioSettings next=RadioSettings.read(request.data);
                     ProcessorSettings processor=request.data.contains("processor")?ProcessorSettings.read(request.data.getCompound("processor")):radio.processor();
                     DspSettings dsp=request.data.contains("dsp")?DspSettings.read(request.data.getCompound("dsp")):radio.dsp();
+                    if(processor.demodulate()&&java.util.Set.of("unrz","urz").contains(processor.modulation())&&next.lab().amplitudeOne()<=0)throw new IllegalArgumentException("line_code");
                     radio.configure(next);radio.configureProcessor(processor);radio.configureDsp(dsp);
                     if(request.data.contains("graphLayers"))radio.graph(request.data.getInt("graphLayers"),request.data.getInt("graphTerms"));
                 }
@@ -122,6 +123,7 @@ public final class RadioNetwork {
         if (!(level.getBlockEntity(pos) instanceof RadioBlockEntity radio)) return;
         CompoundTag data=RadioCapture.capture(level,pos);data.putString("error",error);
         PacketDistributor.sendToPlayer(player, new Snapshot(pos, open, data));
+        for(String challenge:ChallengeRules.achieved(data))Milestones.award(player,challenge);
         if(data.getBoolean("connected")){if(radio.kind().equals("radio")&&!radio.settings().transmit())Milestones.award(player,"first_link");if(radio.kind().equals("correlator")&&data.getIntArray("correlation").length==512)Milestones.award(player,"correlation");}
     }
 }

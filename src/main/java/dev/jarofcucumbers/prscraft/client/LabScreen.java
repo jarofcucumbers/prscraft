@@ -9,9 +9,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 public final class LabScreen extends PanelScreen {
     private final BlockPos pos;private CompoundTag snapshot;private RadioSettings saved;private LabSettings lab;
     private EditBox probability,a0,a1,mu,variance,samples,seed,offset,target;
-    private boolean repeat,random,normalized;private String quantity,error="";private int ticks;
+    private boolean repeat,random,normalized;private String lineCode,quantity,error="";private int ticks;
     private LabSettings cached;private Awgn.Result experiment;
-    public LabScreen(BlockPos pos,CompoundTag snapshot){super(Component.translatable("screen.prscraft.lab"),720,460);this.pos=pos;this.snapshot=snapshot;this.saved=RadioSettings.read(snapshot.getCompound("settings"));lab=saved.lab();repeat=lab.repeat();random=lab.randomBits();normalized=lab.normalized();quantity=lab.quantity();}
+    public LabScreen(BlockPos pos,CompoundTag snapshot){super(Component.translatable("screen.prscraft.lab"),720,460);this.pos=pos;this.snapshot=snapshot;this.saved=RadioSettings.read(snapshot.getCompound("settings"));lab=saved.lab();repeat=lab.repeat();random=lab.randomBits();normalized=lab.normalized();quantity=lab.quantity();lineCode=lab.lineCode();}
     public BlockPos pos(){return pos;}
     public void receive(CompoundTag data){snapshot=data;saved=RadioSettings.read(data.getCompound("settings"));error=data.getString("error");}
     private String text(EditBox previous,double value){return previous==null?Double.toString(value):previous.getValue();}
@@ -24,9 +24,10 @@ public final class LabScreen extends PanelScreen {
         button(14,185,180,tr(repeat?"repeat_on":"repeat_off"),b->{repeat=!repeat;b.setMessage(tr(repeat?"repeat_on":"repeat_off"));});
         button(206,185,180,tr(random?"random_on":"random_off"),b->{random=!random;b.setMessage(tr(random?"random_on":"random_off"));});
         button(398,185,150,tr(normalized?"standardized":"physical_pdf"),b->{normalized=!normalized;b.setMessage(tr(normalized?"standardized":"physical_pdf"));});
+        button(398,426,308,tr("line_"+lineCode),b->{lineCode=lineCode.equals("bipolar")?"unrz":lineCode.equals("unrz")?"urz":"bipolar";b.setMessage(tr("line_"+lineCode));});
         button(560,185,146,tr("apply"),b->save());button(14,426,150,tr("back"),b->onClose());button(176,426,190,tr("book"),b->minecraft.setScreen(new HandbookScreen(this)));
     }
-    private LabSettings draft(){return new LabSettings(repeat,random,number(probability),number(a0),number(a1),samples.getValue(),Long.parseLong(seed.getValue()),number(offset),number(mu),number(variance),normalized,quantity,number(target));}
+    private LabSettings draft(){return new LabSettings(repeat,random,number(probability),number(a0),number(a1),samples.getValue(),Long.parseLong(seed.getValue()),number(offset),number(mu),number(variance),normalized,quantity,number(target),lineCode);}
     private void save(){try{var next=saved.withLab(draft());var data=next.save();data.put("processor",snapshot.getCompound("processor"));PacketDistributor.sendToServer(new RadioNetwork.Request(pos,true,data));error="";}catch(NumberFormatException e){error="number";}catch(IllegalArgumentException e){error=e.getMessage();}}
     @Override public void tick(){if(minecraft.player==null||minecraft.player.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>64){onClose();return;}if(++ticks%40==0)PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,new CompoundTag()));}
     @Override public void onClose(){minecraft.setScreen(new RadioScreen(pos,snapshot));}
@@ -38,7 +39,7 @@ public final class LabScreen extends PanelScreen {
         if(!validation.isEmpty())g.drawString(font,Component.translatable("error.prscraft."+validation),14,216,0xffff6b81,false);
         else label(g,"awgn_model",14,216);
         if(current==null)return;
-        if(!current.equals(cached)){experiment=Awgn.experiment(current.amplitudeZero(),current.amplitudeOne(),current.probabilityOne(),current.noiseMean(),current.noiseVariance(),10000,current.seed());cached=current;}
+        if(!current.equals(cached)){experiment=Awgn.experiment(current.lineCode().equals("bipolar")?current.amplitudeZero():0,current.amplitudeOne(),current.probabilityOne(),current.noiseMean(),current.noiseVariance(),10000,current.seed());cached=current;}
         var r=experiment;
         String[] lines={"P0="+fmt(1-current.probabilityOne())+" · P1="+fmt(current.probabilityOne()),
             "MAP η"+(normalized&&current.noiseVariance()>0?" (Z) = "+fmt((r.threshold()-current.noiseMean())/Math.sqrt(current.noiseVariance())):" = "+fmt(r.threshold())),"Pe(Q) = "+fmt(r.theory())+" · Monte Carlo = "+fmt(r.empirical()),

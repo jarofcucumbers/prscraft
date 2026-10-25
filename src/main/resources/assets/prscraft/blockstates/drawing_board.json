@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "prscraft:block/drawing_board",
+      "y": 180
+    },
+    "facing=south": {
+      "model": "prscraft:block/drawing_board",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "prscraft:block/drawing_board",
+      "y": 270
+    },
+    "facing=west": {
+      "model": "prscraft:block/drawing_board",
+      "y": 90
+    }
+  }
+}

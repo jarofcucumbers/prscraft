@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:board_artist",
+  "display": {
+    "icon": {
+      "id": "prscraft:board_eraser"
+    },
+    "title": {
+      "translate": "advancements.prscraft.wash_eraser.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.wash_eraser.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

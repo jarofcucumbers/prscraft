@@ -6,12 +6,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 public final class HandbookScreen extends PanelScreen {
     private final Screen parent;private int page;private boolean contents=true;
-    public HandbookScreen(Screen parent){super(Component.translatable("item.prscraft.handbook"),720,452);this.parent=parent;}
+    public HandbookScreen(Screen parent){super(Component.translatable("item.prscraft.handbook"),720,560);this.parent=parent;}
     private void refresh(){clearWidgets();build();}
     @Override protected void build(){
-        button(14,418,110,tr("back"),b->onClose());button(132,418,150,tr("contents"),b->{contents=!contents;refresh();});
-        if(contents){for(int i=0;i<HandbookContent.PAGES.size();i++){final int index=i;var p=HandbookContent.PAGES.get(i);button(14+(i/8)*234,68+(i%8)*40,220,Component.translatable("book.prscraft."+p.id()+".title"),b->{page=index;contents=false;refresh();});}}
-        else {button(460,418,110,Component.literal("←"),b->{page=Math.floorMod(page-1,HandbookContent.PAGES.size());});button(582,418,110,Component.literal("→"),b->{page=(page+1)%HandbookContent.PAGES.size();});}
+        button(14,526,110,tr("back"),b->onClose());button(132,526,150,tr("contents"),b->{contents=!contents;refresh();});
+        if(contents){for(int i=0;i<HandbookContent.PAGES.size();i++){final int index=i;var p=HandbookContent.PAGES.get(i);button(14+(i/9)*234,64+(i%9)*38,220,Component.translatable("book.prscraft."+p.id()+".title"),b->{page=index;contents=false;refresh();});}}
+        else {button(460,526,110,Component.literal("←"),b->{page=Math.floorMod(page-1,HandbookContent.PAGES.size());});button(582,526,110,Component.literal("→"),b->{page=(page+1)%HandbookContent.PAGES.size();});}
     }
     @Override public void onClose(){minecraft.setScreen(parent);}
     @Override protected void draw(GuiGraphics g){
@@ -21,10 +21,25 @@ public final class HandbookScreen extends PanelScreen {
         g.drawString(font,Component.translatable("book.prscraft."+content.id()+".title"),18,45,0xfff2d494,false);
         g.drawWordWrap(font,Component.translatable("book.prscraft."+content.id()+".body"),18,78,320,0xffd5e1ed);
         g.fill(356,74,702,300,0xff0b1420);diagram(g,content.diagram());
-        int y=322;for(String formula:content.formulas()){g.drawString(font,font.plainSubstrByWidth(formula,680),18,y,0xff92e8c1,false);y+=21;}
-        g.drawString(font,(page+1)+" / "+HandbookContent.PAGES.size(),330,424,0xffbacbdb,false);
+        int y=320;for(String formula:content.formulas()){
+            g.pose().pushPose();g.pose().translate(18,y,0);g.pose().scale(1.65f,1.65f,1);
+            g.drawWordWrap(font,Component.literal(formula),0,0,410,0xffa7f5c9);g.pose().popPose();
+            y+=font.split(Component.literal(formula),410).size()*15+8;
+        }
+        g.drawWordWrap(font,Component.translatable("book.prscraft."+content.id()+".symbols"),18,Math.max(440,y+4),680,0xffd5e1ed);
+        g.drawString(font,(page+1)+" / "+HandbookContent.PAGES.size(),330,532,0xffbacbdb,false);
     }
     private void diagram(GuiGraphics g,String kind){
+        if(kind.equals("drawing")){
+            g.fill(380,105,680,270,0xff926e43);g.fill(386,111,674,264,0xff20372f);
+            for(int i=0;i<220;i++){int yy=185-(int)(45*Math.sin(i*.07));g.fill(405+i,yy,408+i,yy+3,BoardPixels.RGB[(i/16)%16]);}
+            g.drawString(font,"128 × 128 · world + editor",396,279,0xffe7d7b4,false);return;
+        }
+        if(kind.equals("urz")){
+            line(g,380,240,680,240,0xff526d80);int old=240;
+            for(int i=0;i<280;i++){int bit=i/70;int yy=(bit==0||bit==2||bit==3)&&i%70<35?140:240;if(i>0)line(g,390+i-1,old,390+i,yy,0xff8ceab5);old=yy;}
+            g.drawString(font,"URZ: 1     0     1     1",394,104,0xffe7d7b4,false);g.drawString(font,"Tb = 0.1 s; duty = 0.5",394,275,0xffe7d7b4,false);return;
+        }
         if(kind.equals("circuit")){
             int[][] nodes={{385,115},{510,115},{635,115},{385,235},{510,235},{635,235}};
             for(int[] edge:new int[][]{{0,1},{1,2},{2,5},{5,4},{4,3},{3,0},{1,4}})line(g,nodes[edge[0]][0]+15,nodes[edge[0]][1]+10,nodes[edge[1]][0]+15,nodes[edge[1]][1]+10,0xff4faecd);

@@ -137,7 +137,7 @@ public final class RadioGameTests {
         for(String language:java.util.List.of("en_us","uk_ua")){
             try(var stream=RadioGameTests.class.getResourceAsStream("/assets/prscraft/lang/"+language+".json")){
                 var translations=com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(stream,java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
-                for(var page:HandbookContent.PAGES)for(String suffix:java.util.List.of("title","body")){
+                for(var page:HandbookContent.PAGES)for(String suffix:java.util.List.of("title","body","symbols")){
                     String key="book.prscraft."+page.id()+"."+suffix;h.assertTrue(translations.has(key)&&!translations.get(key).getAsString().isBlank(),"Missing handbook translation: "+key);
                 }
             }catch(java.io.IOException e){throw new RuntimeException(e);}
@@ -219,7 +219,7 @@ public final class RadioGameTests {
         var source=new BlockPos(0,1,4);h.setBlock(source,PRSCraft.TRANSMITTER.get());((RadioBlockEntity)h.getBlockEntity(source)).configure(pattern);h.setBlock(new BlockPos(1,1,4),block("coaxial_port"));
         RadioBlockEntity delay=h.getBlockEntity(PB);var d=DspSettings.DEFAULT;delay.configureDsp(new DspSettings(d.endSeconds(),d.gateSeconds(),d.gateWidth(),d.gateHold(),.02,.1,true,false,1,1));
         var result=RadioCapture.capture(h.getLevel(),h.absolutePos(DSP));h.assertTrue(result.getBoolean("connected")&&result.getIntArray("correlation").length==512,"Correlator needs two real inputs");
-        h.assertTrue(Math.abs(result.getDouble("peakLag")-.02)<.003,"Correlation must recover the known 20 ms delay");h.assertTrue(result.getDouble("peakValue")>.9,"Delayed pattern should correlate strongly");h.succeed();
+        h.assertTrue(Math.abs(result.getDouble("peakLag")-.02)<.003,"Correlation must recover the known 20 ms delay");h.assertTrue(result.getDouble("peakValue")>.9,"Delayed pattern should correlate strongly");h.assertTrue(ChallengeRules.achieved(result).contains("delay_hunt"),"Known physical delay must fulfill its challenge");h.succeed();
     }
     @GameTest(template="empty",timeoutTicks=20)
     public static void activeFeedbackFailsWithoutHangingAndAdvancementsExist(GameTestHelper h){
@@ -231,4 +231,66 @@ public final class RadioGameTests {
         for(String id:Milestones.IDS)h.assertTrue(h.getLevel().getServer().getAdvancements().get(ResourceLocation.fromNamespaceAndPath(PRSCraft.ID,id))!=null,"Missing advancement: "+id);h.succeed();
     }
 
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void boardPixelCostsEmptyEraserAndSerialization(GameTestHelper h){
+        var pos=new BlockPos(2,1,2);h.setBlock(pos,PRSCraft.BOARD.get());DrawingBoardEntity board=h.getBlockEntity(pos);
+        var chalk=new net.minecraft.world.item.ItemStack(PRSCraft.CHALKS.get(0).get());chalk.setDamageValue(1020);
+        h.assertTrue(BoardTools.apply(board,chalk,BoardPixels.brush(64,64,16))==4&&chalk.isEmpty(),"Last chalk must draw only its four remaining pixels and break");
+        int painted=0;for(byte b:board.pixels())if(b!=0)painted++;h.assertTrue(painted==4,"No unpaid pixels may be drawn");
+        var eraser=new net.minecraft.world.item.ItemStack(PRSCraft.ERASER.get());
+        int[] empty=java.util.stream.IntStream.range(0,256).toArray();BoardTools.apply(board,eraser,empty);BoardTools.apply(board,eraser,empty);
+        h.assertTrue(!eraser.isEmpty()&&eraser.getDamageValue()==512,"Blank pixels must spend eraser durability without destroying it");
+        h.assertTrue(BoardTools.apply(board,eraser,new int[]{64*128+64})==0,"Empty eraser cannot modify a board");
+        var copy=new DrawingBoardEntity(board.getBlockPos(),board.getBlockState());copy.loadWithComponents(board.saveWithFullMetadata(h.getLevel().registryAccess()),h.getLevel().registryAccess());
+        h.assertTrue(java.util.Arrays.equals(board.pixels(),copy.pixels()),"World reload must preserve the complete canvas");
+        h.assertTrue(java.util.Arrays.equals(board.pixels(),board.getUpdateTag(h.getLevel().registryAccess()).getByteArray("pixels")),"Tracking clients must receive the same canvas");
+        var drops=Block.getDrops(board.getBlockState(),h.getLevel(),board.getBlockPos(),board);
+        h.assertTrue(drops.size()==1&&drops.getFirst().has(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA),"Collected board must retain its drawing in the dropped item");
+        var dropped=drops.getFirst().get(net.minecraft.core.component.DataComponents.BLOCK_ENTITY_DATA).copyTag();h.assertTrue(java.util.Arrays.equals(board.pixels(),dropped.getByteArray("pixels")),"Dropped board must contain exact pixel data");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void washingConsumesWaterAndDyePreservesWear(GameTestHelper h){
+        var pos=new BlockPos(2,1,2);h.setBlock(pos,Blocks.WATER_CAULDRON.defaultBlockState().setValue(LayeredCauldronBlock.LEVEL,3));
+        var player=h.makeMockPlayer(net.minecraft.world.level.GameType.SURVIVAL);var eraser=new net.minecraft.world.item.ItemStack(PRSCraft.ERASER.get());eraser.setDamageValue(512);player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND,eraser);
+        var worldPos=h.absolutePos(pos);var hit=new net.minecraft.world.phys.BlockHitResult(net.minecraft.world.phys.Vec3.atCenterOf(worldPos),net.minecraft.core.Direction.UP,worldPos,false);
+        PRSCraft.ERASER.get().useOn(new net.minecraft.world.item.context.UseOnContext(player,net.minecraft.world.InteractionHand.MAIN_HAND,hit));
+        h.assertTrue(eraser.getDamageValue()==0&&h.getLevel().getBlockState(worldPos).getValue(LayeredCauldronBlock.LEVEL)==2,"Washing must restore 512 uses and spend one water level");
+        PRSCraft.ERASER.get().useOn(new net.minecraft.world.item.context.UseOnContext(player,net.minecraft.world.InteractionHand.MAIN_HAND,hit));h.assertTrue(h.getLevel().getBlockState(worldPos).getValue(LayeredCauldronBlock.LEVEL)==2,"Clean eraser must not waste water");
+        var chalk=new net.minecraft.world.item.ItemStack(PRSCraft.CHALKS.get(0).get());chalk.setDamageValue(567);
+        var input=net.minecraft.world.item.crafting.CraftingInput.of(2,1,java.util.List.of(chalk,new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.RED_DYE)));
+        var recipe=new ChalkDyeRecipe(net.minecraft.world.item.crafting.CraftingBookCategory.MISC);
+        h.assertTrue(recipe.matches(input,h.getLevel()),"One chalk and one dye must match");var colored=recipe.assemble(input,h.getLevel().registryAccess());
+        h.assertTrue(colored.getItem() instanceof ChalkItem c&&c.palette==15&&colored.getDamageValue()==567,"Dye changes palette but never repairs used chalk");
+        h.assertTrue(!eraser.isRepairable()&&!chalk.isRepairable(),"Drawing tools must not bypass their pixel costs through vanilla repair");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void unipolarReturnToZeroReachesAndDecodesAtRx(GameTestHelper h){
+        setup(h);RadioBlockEntity tx=h.getBlockEntity(TX),rx=h.getBlockEntity(RX);
+        var lab=new LabSettings(true,false,.5,-1,1,"0,1",42,0,0,0,false,"relative",.1,"urz");
+        tx.configure(new RadioSettings("sin(10)",100,16,true,true,false,0,100,20,true,.5,"bits","10110010",10,lab));rx.configure(cleanRx());
+        rx.configureProcessor(new ProcessorSettings(0,0,1000,"urz",100,10,.5,true));
+        var capture=RadioCapture.capture(h.getLevel(),h.absolutePos(RX));h.assertTrue(capture.getBoolean("connected"),"URZ must travel through the real cable path");
+        h.assertTrue(capture.getString("decoded").equals("10110010"),"RX must decode URZ using active pulse averages");
+        h.assertTrue(ChallengeRules.achieved(capture).contains("unipolar_link"),"Correct real unipolar link must fulfill its challenge");
+        rx.configureProcessor(new ProcessorSettings(0,0,1000,"urz",100,20,.5,true));h.assertTrue(!ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(RX))).contains("unipolar_link"),"Wrong symbol timing must not win a decoding challenge");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void realFilterAndSumIntegralChallenges(GameTestHelper h){
+        pairSetup(h,"adder");h.setBlock(PR,PRSCraft.INTEGRATOR.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.NORTH));
+        var summed=RadioCapture.capture(h.getLevel(),h.absolutePos(PR));h.assertTrue(ChallengeRules.achieved(summed).contains("superposition"),"Real two-source sum followed by integration must qualify");
+        h.setBlock(DSP,PRSCraft.FILTER.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.NORTH));RadioBlockEntity filter=h.getBlockEntity(DSP);
+        filter.configureProcessor(new ProcessorSettings(0,0,20,"bpsk",100,10,.5,false));((RadioBlockEntity)h.getBlockEntity(PA)).configure(cleanSource("sin(10)+3*cos(80)"));
+        var result=RadioCapture.capture(h.getLevel(),h.absolutePos(DSP));h.assertTrue(ChallengeRules.achieved(result).contains("filter_lab"),"Real filter with low retained energy must qualify");h.setBlock(new BlockPos(4,1,5),Blocks.AIR);
+        h.assertTrue(ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(DSP))).isEmpty(),"Disconnected filter must never fulfill a challenge");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void noisyBpskAndGatedIntegrationChallenges(GameTestHelper h){
+        pairSetup(h,"modulator");RadioBlockEntity source=h.getBlockEntity(PA),rx=h.getBlockEntity(PR);
+        source.configure(new RadioSettings("sin(10)",100,16,true,true,false,0,100,20,true,.5,"bits","10110010",10));
+        rx.configure(cleanRx().withLab(LabSettings.defaults(.02)));rx.configureProcessor(new ProcessorSettings(0,0,1000,"bpsk",100,10,.5,true));
+        var data=RadioCapture.capture(h.getLevel(),h.absolutePos(PR));h.assertTrue(data.getString("decoded").equals("10110010")&&ChallengeRules.achieved(data).contains("noise_recovery"),"Coherent BPSK must decode through actual AWGN and fulfill its challenge");
+        h.setBlock(DSP,PRSCraft.TIME_GATE.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.NORTH));
+        h.setBlock(PR,PRSCraft.INTEGRATOR.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.NORTH));
+        h.assertTrue(ChallengeRules.achieved(RadioCapture.capture(h.getLevel(),h.absolutePos(PR))).contains("timing_lab"),"A real gate followed by nonzero integration must fulfill its challenge");h.succeed();
+    }
 }
