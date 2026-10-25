@@ -3,7 +3,7 @@ import java.util.*;
 /** Handbook pages are part of the feature contract; update with every user-facing change. */
 public final class HandbookContent {
     private HandbookContent(){}
-    public static final String VERSION="0.7.2";
+    public static final String VERSION="0.7.2.1";
     public record Page(String id,String diagram,List<String> formulas){}
     private static final List<Page> ORIGINAL_PAGES=List.of(
         new Page("workflow","chain",List.of("TX → port → cable → port → RX","cables: 1 m by default; wrench adjusts length","A_RX = A_TX · 10^((Ptx−20−loss)/20)")),

@@ -287,7 +287,7 @@
       "items": [
         "line_analyzer"
       ],
-      "diagram": "circuit",
+      "diagram": "analyzer",
       "formulas": [
         "whole topology: ≤1024 nodes; ≤32 listed devices",
         "read only; A/B/OUT labels"

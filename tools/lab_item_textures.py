@@ -22,3 +22,9 @@ for i,(label,accent) in enumerate(profiles):
  for y in [11,16,21,26]:d.rectangle((3,y,5,y+1),fill='#96a6a2')
  save('template_'+str(i),im)
 model={'parent':'prscraft:item/template_0','overrides':[{'predicate':{'prscraft:profile':i},'model':f'prscraft:item/template_{i}'} for i in range(1,13)]};(root/'models/item/signal_template.json').write_text(json.dumps(model,indent=2)+'\n')
+
+# Original handheld line analyzer: protected case, CRT trace, rotary dial and probe.
+im=Image.new('RGBA',(32,32));d=ImageDraw.Draw(im)
+d.rectangle((14,0,17,6),fill='#7b979d');d.rectangle((15,0,16,2),fill='#d9e4d6');d.line([(17,3),(24,3),(28,7),(28,18)],fill='#294b5c',width=2)
+d.rounded_rectangle((4,5,26,31),radius=3,fill='#112c3b');d.rounded_rectangle((6,6,24,29),radius=2,fill='#467b8c',outline='#94bac0');d.rectangle((8,9,22,19),fill='#0b2430',outline='#b1d6c5');d.line((9,14,21,14),fill='#29495b');d.line([(9,16),(11,15),(12,11),(14,17),(16,12),(18,15),(21,13)],fill='#7de0ad')
+d.text((9,6),'LINE',font=ImageFont.load_default(size=5),fill='#e4e9ce');d.ellipse((13,22,21,29),fill='#182e3b',outline='#c2b882');d.line((17,25,19,23),fill='#e9d486',width=1);d.rectangle((8,22,10,24),fill='#e58e73');d.rectangle((8,26,10,28),fill='#8bd0ac');d.line((5,10,5,26),fill='#284e60');d.line((25,10,25,26),fill='#284e60');save('line_analyzer',im)

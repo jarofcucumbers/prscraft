@@ -3,7 +3,7 @@ loaderVersion="[4,)"
 license="All Rights Reserved"
 [[mods]]
 modId="prscraft"
-version="0.7.2"
+version="0.7.2.1"
 displayName="PRSCraft"
 description="Telecommunications laboratory: transmitters, cabling and signal budgets."
 [[dependencies.prscraft]]

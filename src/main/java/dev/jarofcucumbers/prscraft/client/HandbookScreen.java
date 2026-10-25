@@ -8,6 +8,7 @@ public final class HandbookScreen extends PanelScreen {
     private final Screen parent;
     private HandbookCurriculum.Chapter chapter;private String entry;private int contentsPage;private boolean contents,revealed;
     public HandbookScreen(Screen parent){super(Component.translatable("item.prscraft.handbook"),720,600);this.parent=parent;var bookmark=HandbookBookmarks.load();chapter=bookmark.chapter();entry=bookmark.entry();contents=bookmark.contents();contentsPage=bookmark.contentsPage();}
+    @Override protected net.minecraft.client.gui.components.Button button(int x,int y,int width,Component label,net.minecraft.client.gui.components.Button.OnPress press){return addRenderableWidget(new ScaledButton(x,y,width,32,1.2f,label,press));}
     private java.util.List<String> entries(){return HandbookCurriculum.entries(chapter);}
     private void remember(){HandbookBookmarks.save(new HandbookBookmark(chapter,entry,contents,contentsPage));}
     private void refresh(){clearWidgets();build();}
@@ -15,13 +16,13 @@ public final class HandbookScreen extends PanelScreen {
     private void chapter(HandbookCurriculum.Chapter next){chapter=next;entry=entries().getFirst();contents=true;contentsPage=0;revealed=false;remember();refresh();}
     @Override protected void build(){
         for(var value:HandbookCurriculum.Chapter.values()){int x=14+value.ordinal()*234;var b=button(x,42,224,tr("chapter_"+value.name().toLowerCase(java.util.Locale.ROOT)),w->chapter(value));b.active=value!=chapter;}
-        button(14,568,110,tr("back"),b->onClose());button(132,568,150,tr("contents"),b->{contents=true;revealed=false;remember();refresh();});
+        button(14,562,110,tr("back"),b->onClose());button(132,562,150,tr("contents"),b->{contents=true;revealed=false;remember();refresh();});
         if(contents){int total=(entries().size()+17)/18;
-            button(460,568,110,Component.literal("←"),b->{contentsPage=Math.floorMod(contentsPage-1,total);remember();refresh();});button(582,568,110,Component.literal("→"),b->{contentsPage=(contentsPage+1)%total;remember();refresh();});
+            button(460,562,110,Component.literal("←"),b->{contentsPage=Math.floorMod(contentsPage-1,total);remember();refresh();});button(582,562,110,Component.literal("→"),b->{contentsPage=(contentsPage+1)%total;remember();refresh();});
             for(int i=contentsPage*18;i<Math.min(entries().size(),(contentsPage+1)*18);i++){String id=entries().get(i);button(18+((i%18)/9)*350,116+(i%9)*44,334,Component.translatable(HandbookCurriculum.titleKey(chapter,id)),b->open(id));}
         }else{
-            button(460,568,110,Component.literal("←"),b->open(entries().get(Math.floorMod(entries().indexOf(entry)-1,entries().size()))));button(582,568,110,Component.literal("→"),b->open(entries().get((entries().indexOf(entry)+1)%entries().size())));
-            if(chapter==HandbookCurriculum.Chapter.TASKS)button(14,538,250,tr(revealed?"hide_solution":"show_solution"),b->{revealed=!revealed;refresh();});
+            button(460,562,110,Component.literal("←"),b->open(entries().get(Math.floorMod(entries().indexOf(entry)-1,entries().size()))));button(582,562,110,Component.literal("→"),b->open(entries().get((entries().indexOf(entry)+1)%entries().size())));
+            if(chapter==HandbookCurriculum.Chapter.TASKS)button(14,526,250,tr(revealed?"hide_solution":"show_solution"),b->{revealed=!revealed;refresh();});
         }
     }
     @Override public void removed(){remember();super.removed();}
@@ -57,9 +58,12 @@ public final class HandbookScreen extends PanelScreen {
             int row=y+32;for(String parameter:node.parameters()){g.drawWordWrap(font,Component.literal(parameter),x+8,row,176,0xffdae8ec);row+=font.split(Component.literal(parameter),176).size()*10+2;}
         }
         boolean signal=task.nodes().stream().anyMatch(n->n.item().equals("prscraft:transmitter")||n.item().equals("prscraft:bit_generator"));
-        if(signal)g.drawWordWrap(font,tr("task_common").copy().append(" ").append(tr("task_wiring")),18,506,680,0xffb7cad7);
+        if(signal)g.drawWordWrap(font,tr("task_common").copy().append(" ").append(tr("task_wiring")),18,499,680,0xffb7cad7);
     }
     private void diagram(GuiGraphics g,String kind){
+        if(kind.equals("analyzer")){
+            g.pose().pushPose();g.pose().translate(487,130,0);g.pose().scale(4,4,1);g.renderItem(new ItemStack(PRSCraft.ANALYZER.get()),0,0);g.pose().popPose();g.drawString(font,"READ ONLY · A / B / OUT",404,255,0xff91e0c4,false);return;
+        }
         if(kind.equals("gray")){
             g.drawString(font,"Binary    →    Gray",390,105,0xffb2eddb,false);
             String[] b={"00","01","10","11"},v={"00","01","11","10"};for(int i=0;i<4;i++)g.drawString(font,b[i]+"        →        "+v[i],410,145+i*30,0xffb2eddb,false);return;
