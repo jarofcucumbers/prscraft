@@ -334,7 +334,7 @@ public final class RadioGameTests {
     public static void grayConverterRoundTripsThroughRealPortsAndPersists(GameTestHelper h){
         pairSetup(h,"gray_converter");RadioBlockEntity source=h.getBlockEntity(PA),converter=h.getBlockEntity(DSP),receiver=h.getBlockEntity(PR);
         source.configure(new RadioSettings("sin(10)",100,16,true,true,false,0,100,20,true,1,"bits","10110010",10));
-        var first=RadioCapture.capture(h.getLevel(),h.absolutePos(DSP));h.assertTrue(first.getBoolean("connected")&&first.getString("grayOutput").equals("11100011"),"Physical converter must encode received bits in four-bit words");
+        var first=RadioCapture.capture(h.getLevel(),h.absolutePos(DSP));h.assertTrue(ChallengeRules.achieved(first).contains("gray_binary"),"Working Gray serial conversion earns its exercise");h.assertTrue(first.getBoolean("connected")&&first.getString("grayOutput").equals("11100011"),"Physical converter must encode received bits in four-bit words");
         h.setBlock(PR,PRSCraft.GRAY.get().defaultBlockState().setValue(TransmitterBlock.FACING,net.minecraft.core.Direction.NORTH));RadioBlockEntity reverse=h.getBlockEntity(PR);
         reverse.configureGray(new GraySettings("gray_to_binary",4,10,0,-1,1,16,-1,1,100));var roundTrip=RadioCapture.capture(h.getLevel(),h.absolutePos(PR));h.assertTrue(roundTrip.getString("grayOutput").equals("10110010"),"Two converters must round-trip through lossy physical segments");
         var restored=new RadioBlockEntity(reverse.getBlockPos(),reverse.getBlockState());restored.loadWithComponents(reverse.saveWithFullMetadata(h.getLevel().registryAccess()),h.getLevel().registryAccess());h.assertTrue(restored.gray().equals(reverse.gray()),"Gray settings must survive world reload");
@@ -346,7 +346,7 @@ public final class RadioGameTests {
         source.configure(new RadioSettings("sin(10)",100,4,true,true,false,0,100,20,true,1,"quantized","10",10));
         double gain=Math.pow(10,-2.4/20);converter.configureGray(new GraySettings("levels_to_gray",2,10,0,-1,1,4,-gain,gain,100));
         var capture=RadioCapture.capture(h.getLevel(),h.absolutePos(DSP));h.assertTrue(capture.getBoolean("connected")&&!capture.getString("grayInput").isEmpty()&&!capture.getString("grayOutput").isEmpty(),"Quantized source must produce serial Gray words through actual attenuation");
-        String[] indices=capture.getString("grayInput").split(",");StringBuilder expected=new StringBuilder();for(String index:indices)expected.append(GrayCodec.word(GrayCodec.encode(Integer.parseInt(index)),2));h.assertTrue(expected.toString().equals(capture.getString("grayOutput")),"Every detected quantization level must use its Gray label");h.succeed();
+        h.assertTrue(ChallengeRules.achieved(capture).contains("gray_levels"),"Working Gray level encoding earns its exercise");String[] indices=capture.getString("grayInput").split(",");StringBuilder expected=new StringBuilder();for(String index:indices)expected.append(GrayCodec.word(GrayCodec.encode(Integer.parseInt(index)),2));h.assertTrue(expected.toString().equals(capture.getString("grayOutput")),"Every detected quantization level must use its Gray label");h.succeed();
     }
     @GameTest(template="empty",timeoutTicks=20)
     public static void allDevicePortRolesAndRotatedPortConnections(GameTestHelper h){
@@ -375,5 +375,41 @@ public final class RadioGameTests {
             if(processor.kind.equals("adder")||processor.kind.equals("correlator")){var side=front.getCounterClockWise();var b=center.relative(side,2);h.setBlock(b,PRSCraft.TRANSMITTER.get());((RadioBlockEntity)h.getBlockEntity(b)).configure(cleanSource("cos(10)"));h.setBlock(center.relative(side),block("coaxial_port"));}
             var result=RadioCapture.capture(h.getLevel(),h.absolutePos(rx));h.assertTrue(result.getBoolean("connected")&&result.getString("pipeline").contains(processor.kind),"Wrong real input/output route for "+processor.kind+" facing "+front+": "+result.getString("fault"));
         }h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void insetDevicesNeverHideTheGroundFace(GameTestHelper h){
+        var ground=new BlockPos(3,1,3);var above=ground.above();h.setBlock(ground,Blocks.SAND);
+        for(var holder:PRSCraft.BLOCKS.getEntries())if(holder.get() instanceof TransmitterBlock){
+            h.setBlock(above,holder.get());var state=h.getLevel().getBlockState(h.absolutePos(above));h.assertTrue(!state.canOcclude(),"Inset equipment must not claim full-cube occlusion");
+            h.assertTrue(Block.shouldRenderFace(Blocks.SAND.defaultBlockState(),h.getLevel(),h.absolutePos(ground),net.minecraft.core.Direction.UP,h.absolutePos(above)),"Ground must render under "+holder.getId());
+        }h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void curriculumSolutionsAndSchematicsCoverEveryGoal(GameTestHelper h){
+        var covered=HandbookCurriculum.components().stream().flatMap(c->c.items().stream()).collect(java.util.stream.Collectors.toSet());
+        for(var item:PRSCraft.ITEMS.getEntries())h.assertTrue(covered.contains(item.getId().getPath()),"No component page: "+item.getId());
+        for(String lang:java.util.List.of("uk_ua","en_us"))try(var stream=RadioGameTests.class.getResourceAsStream("/assets/prscraft/lang/"+lang+".json")){
+            var text=com.google.gson.JsonParser.parseReader(new java.io.InputStreamReader(stream,java.nio.charset.StandardCharsets.UTF_8)).getAsJsonObject();
+            for(String id:Milestones.IDS){h.assertTrue(text.has("book.task."+id+".solution"),"No solution: "+id);var task=HandbookCurriculum.task(id);h.assertTrue(!task.nodes().isEmpty(),"No schematic: "+id);
+                for(var node:task.nodes()){h.assertTrue(BuiltInRegistries.ITEM.containsKey(ResourceLocation.parse(node.item())),"Missing diagram item "+node.item());h.assertTrue(!node.parameters().isEmpty(),"Diagram lacks settings");}
+                for(var edge:task.edges())h.assertTrue(edge.from()>=0&&edge.from()<task.nodes().size()&&edge.to()>=0&&edge.to()<task.nodes().size(),"Invalid schematic connection");
+            }
+        }catch(java.io.IOException e){throw new RuntimeException(e);}h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void largeShapePayloadRoundTripsAndPaysForEveryPixel(GameTestHelper h){
+        int[] points=BoardDrawing.shape(BoardDrawing.Shape.RECTANGLE,0,0,127,127,16);var packet=new BoardNetwork.Stroke(h.absolutePos(new BlockPos(2,1,2)),false,points);
+        var buffer=new net.minecraft.network.RegistryFriendlyByteBuf(io.netty.buffer.Unpooled.buffer(),h.getLevel().registryAccess());BoardNetwork.Stroke decoded;
+        try{BoardNetwork.Stroke.CODEC.encode(buffer,packet);h.assertTrue(buffer.readableBytes()<2100,"Whole canvas must fit a bounded bitset payload");decoded=BoardNetwork.Stroke.CODEC.decode(buffer);}finally{buffer.release();}
+        h.assertTrue(java.util.Arrays.equals(java.util.Arrays.stream(points).sorted().toArray(),decoded.pixels()),"Large shape may not lose pixels in transport");
+        var pos=new BlockPos(2,1,2);h.setBlock(pos,PRSCraft.BOARD.get());DrawingBoardEntity board=h.getBlockEntity(pos);var eraser=new net.minecraft.world.item.ItemStack(PRSCraft.ERASER.get());int count=BoardTools.apply(board,eraser,decoded.pixels());
+        h.assertTrue(count==points.length&&eraser.getDamageValue()==count,"Large eraser shapes pay for every touched blank pixel");h.succeed();
+    }
+    @GameTest(template="empty",timeoutTicks=20)
+    public static void analyzerMapLabelsBothAdderBranchesAndActualSignalRoute(GameTestHelper h){
+        pairSetup(h,"adder");var report=AnalyzerService.scan(h.getLevel(),h.absolutePos(new BlockPos(4,1,5)),h.absolutePos(PR));var nodes=report.getList("devices",10);var edges=report.getList("connections",10);var found=new java.util.HashSet<String>();
+        for(int i=0;i<edges.size();i++){var edge=edges.getCompound(i);h.assertTrue(!edge.getString("direction").equals("physical"),"Each separate adder bus has a valid source-to-input direction");boolean reverse=edge.getString("direction").equals("ba");var a=nodes.getCompound(edge.getInt(reverse?"b":"a"));var b=nodes.getCompound(edge.getInt(reverse?"a":"b"));BlockPos from=new BlockPos(a.getInt("x"),a.getInt("y"),a.getInt("z")),to=new BlockPos(b.getInt("x"),b.getInt("y"),b.getInt("z"));found.add(from.toShortString()+">"+to.toShortString()+":"+edge.getString(reverse?"aRole":"bRole"));}
+        h.assertTrue(found.contains(h.absolutePos(PA).toShortString()+">"+h.absolutePos(DSP).toShortString()+":A"),"First TX must enter A");h.assertTrue(found.contains(h.absolutePos(PB).toShortString()+">"+h.absolutePos(DSP).toShortString()+":B"),"Second TX must enter B");h.assertTrue(found.contains(h.absolutePos(DSP).toShortString()+">"+h.absolutePos(PR).toShortString()+":RX"),"Adder OUT must lead to RX");
+        h.assertTrue(report.getCompound("capture").getList("signalEdges",10).size()==3,"Selected receiver must expose exactly its three computed input routes");h.succeed();
     }
 }

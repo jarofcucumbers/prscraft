@@ -109,6 +109,10 @@ public final class CircuitCapture{
             if(root.a!=null)data.putString("medium",root.a.route().medium().name());
             List<Node> used=new ArrayList<>();engine.collect(root,Collections.newSetFromMap(new IdentityHashMap<Node,Boolean>()),used);
             data.putString("pipeline",String.join(" → ",used.stream().filter(n->!n.device.isSource()).map(n->n.device.kind()).toList().reversed()));data.putInt("activeNodes",used.size());
+            ListTag signalEdges=new ListTag();for(Node n:used)for(int side=0;side<2;side++){
+                Input input=side==0?n.a:n.b;if(input==null||side==1&&n.b==n.a)continue;
+                var edge=new CompoundTag();edge.putLong("from",input.route().endpoint().asLong());edge.putLong("to",n.device.getBlockPos().asLong());edge.putString("input",n.device.isSource()?"RX":side==0?"A":"B");signalEdges.add(edge);
+            }data.put("signalEdges",signalEdges);
             Set<BlockPos> cables=new HashSet<>();ListTag sources=new ListTag();
             for(Node n:used){for(Input input:new Input[]{n.a,n.b})if(input!=null)for(BlockPos node:input.route().path())if(level.getBlockState(node).getBlock() instanceof CableBlock)cables.add(node);
                 if(n.a==null){var source=n.device.settings().save();source.putString("position",n.device.getBlockPos().toShortString());sources.add(source);}}

@@ -15,7 +15,7 @@ public final class BoardPixels {
     }
     /** Reject the whole packet before charging or changing anything. */
     public static int[] checked(int[] pixels){
-        if(pixels==null||pixels.length==0||pixels.length>256)throw new IllegalArgumentException("pixels");
+        if(pixels==null||pixels.length==0||pixels.length>COUNT)throw new IllegalArgumentException("pixels");
         for(int p:pixels)if(p<0||p>=COUNT)throw new IllegalArgumentException("pixels");
         return Arrays.stream(pixels).distinct().toArray();
     }

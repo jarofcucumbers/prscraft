@@ -3,9 +3,9 @@ import java.util.*;
 /** Handbook pages are part of the feature contract; update with every user-facing change. */
 public final class HandbookContent {
     private HandbookContent(){}
-    public static final String VERSION="0.7.1";
+    public static final String VERSION="0.7.2";
     public record Page(String id,String diagram,List<String> formulas){}
-    public static final List<Page> PAGES=List.of(
+    private static final List<Page> ORIGINAL_PAGES=List.of(
         new Page("workflow","chain",List.of("TX → port → cable → port → RX","cables: 1 m by default; wrench adjusts length","A_RX = A_TX · 10^((Ptx−20−loss)/20)")),
         new Page("functions","sine",List.of("x(t) = Σ Ai sin(2πfi t) + Σ Bj cos(2πfj t)","sin(10) = sin(2π·10·t)")),
         new Page("sampling","sampling",List.of("fvz ≥ 2 fmax","Ts = 1/fvz · τ/T = duty","II: x[n] = x(nTs)")),
@@ -38,6 +38,7 @@ public final class HandbookContent {
         new Page("gray","gray",List.of("Gray: g = b XOR (b >> 1)","inverse: b[i] = b[i−1] XOR g[i]; b[0]=g[0]","level index: round((x−min)·(L−1)/(max−min))")),
         new Page("limits","chain",List.of("≤16 depth · ≤32 active nodes · ≤512 nodes per segment","finite-window simulation, not a real-time RF solver"))
     );
+    public static final List<Page> PAGES=java.util.stream.Stream.concat(ORIGINAL_PAGES.stream(),HandbookCurriculum.extraPages().stream()).toList();
     private static final Set<String> EQUIPMENT=Set.of("transmitter","coaxial_port","fiber_port","metallic_port","coaxial_cable","fiber_cable","metallic_cable","amplifier","frequency_filter","modulator","bit_generator","line_analyzer","signal_template","data_card","handbook","adder","integrator","correlator","time_gate","delay_line","cable_wrench","gray_converter","drawing_board","board_eraser");
     public static final Set<String> COVERED_ITEMS;
     static {var items=new HashSet<>(EQUIPMENT);for(String color:BoardPixels.COLORS)items.add(color+"_chalk");COVERED_ITEMS=Set.copyOf(items);}

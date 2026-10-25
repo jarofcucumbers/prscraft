@@ -1,0 +1,2111 @@
+{
+  "foundations": [
+    "intro",
+    "what_signal",
+    "workflow",
+    "time_frequency",
+    "functions",
+    "lab_tone",
+    "lab_sum",
+    "read_spectrum",
+    "spectrum",
+    "energy",
+    "lab_adc",
+    "sampling",
+    "quantization",
+    "digital",
+    "line_coding",
+    "gaussian",
+    "awgn",
+    "q",
+    "circuit",
+    "limits"
+  ],
+  "lessons": [
+    {
+      "id": "intro",
+      "diagram": "chain",
+      "formulas": [
+        "information → signal → channel → receiver",
+        "one change at a time → compare captures"
+      ]
+    },
+    {
+      "id": "what_signal",
+      "diagram": "sine",
+      "formulas": [
+        "x(t): amplitude at time t",
+        "x(t) = A sin(2πft)",
+        "A = 1; f = 10 Hz"
+      ]
+    },
+    {
+      "id": "time_frequency",
+      "diagram": "sine",
+      "formulas": [
+        "T = 1 / f",
+        "10 Hz → 0.1 s; 20 Hz → 0.05 s",
+        "f_waveform [Hz] ≠ RF carrier [MHz]"
+      ]
+    },
+    {
+      "id": "read_spectrum",
+      "diagram": "spectrum",
+      "formulas": [
+        "waveform: amplitude vs time",
+        "spectrum: amplitude vs frequency",
+        "10 Hz + 20 Hz → two spectral peaks"
+      ]
+    },
+    {
+      "id": "lab_tone",
+      "diagram": "sine",
+      "formulas": [
+        "TX: analog; sin(10); RF = 100 MHz",
+        "RX: RF = 100 MHz; thermal OFF; μ = variance = 0",
+        "compare sin(10), 2*sin(10), sin(20)"
+      ]
+    },
+    {
+      "id": "lab_sum",
+      "diagram": "spectrum",
+      "formulas": [
+        "x(t) = sin(10) + 0.5*cos(20)",
+        "four tones: sin(10)+cos(20)+sin(30)+cos(40)",
+        "LPF: pass 0…20 Hz"
+      ]
+    },
+    {
+      "id": "lab_adc",
+      "diagram": "sampling",
+      "formulas": [
+        "sin(10): choose fvz = 100 Hz",
+        "sampled: compare I vs II at duty = 0.5",
+        "quantized: compare L = 4, 16, 256"
+      ]
+    }
+  ],
+  "components": [
+    {
+      "id": "tx",
+      "items": [
+        "transmitter"
+      ],
+      "diagram": "sine",
+      "formulas": [
+        "analog / sampled / quantized / bits / discrete",
+        "RF: 1…10000 MHz; Ptx: −30…40 dBm"
+      ]
+    },
+    {
+      "id": "rx",
+      "items": [],
+      "diagram": "awgn",
+      "formulas": [
+        "y = attenuated input + μ + σZ",
+        "UNRZ / URZ threshold = expected A_RX / 2"
+      ]
+    },
+    {
+      "id": "bit_generator",
+      "items": [
+        "bit_generator"
+      ],
+      "diagram": "bits",
+      "formulas": [
+        "P(1) = p; P(0) = 1−p",
+        "NRZ / UNRZ / URZ; Rb = 1…1000 bit/s"
+      ]
+    },
+    {
+      "id": "amplifier",
+      "items": [
+        "amplifier"
+      ],
+      "diagram": "sine",
+      "formulas": [
+        "gain = 10^(GdB/20)",
+        "G: −40…60 dB; output clipped at ±16 u"
+      ]
+    },
+    {
+      "id": "frequency_filter",
+      "items": [
+        "frequency_filter"
+      ],
+      "diagram": "spectrum",
+      "formulas": [
+        "pass low ≤ f ≤ high; 0 ≤ low < high ≤ 20000 Hz",
+        "FFT bin frequency = k / capture duration"
+      ]
+    },
+    {
+      "id": "modulator",
+      "items": [
+        "modulator"
+      ],
+      "diagram": "bpsk",
+      "formulas": [
+        "AM: (1+m·x/peak) cos(2πfc t)",
+        "BPSK: b(t) cos(2πfc t); 2 ≤ fc/Rb ≤ 16"
+      ]
+    },
+    {
+      "id": "adder",
+      "items": [
+        "adder"
+      ],
+      "diagram": "math",
+      "formulas": [
+        "y = gA·A + gB·B",
+        "−10 ≤ gA,gB ≤ 10"
+      ]
+    },
+    {
+      "id": "integrator",
+      "items": [
+        "integrator"
+      ],
+      "diagram": "math",
+      "formulas": [
+        "y(t) = integral from 0 to min(t,T) of x(s) ds",
+        "T: 0…8 s; u → u·s"
+      ]
+    },
+    {
+      "id": "correlator",
+      "items": [
+        "correlator"
+      ],
+      "diagram": "correlation",
+      "formulas": [
+        "R_AB(τ) = integral A(t) B(t+τ) dt",
+        "normalized correlation: −1 ≤ ρ ≤ 1"
+      ]
+    },
+    {
+      "id": "time_gate",
+      "items": [
+        "time_gate"
+      ],
+      "diagram": "gate",
+      "formulas": [
+        "hold: pass for t ≥ T",
+        "pulse: pass for T ≤ t < T+width"
+      ]
+    },
+    {
+      "id": "delay_line",
+      "items": [
+        "delay_line"
+      ],
+      "diagram": "gate",
+      "formulas": [
+        "y(t) = x(t−D); D: 0…8 s",
+        "outside capture: zero; fractional interpolation"
+      ]
+    },
+    {
+      "id": "gray_converter",
+      "items": [
+        "gray_converter"
+      ],
+      "diagram": "gray",
+      "formulas": [
+        "g = b XOR (b >> 1)",
+        "level index = round((x−min)·(L−1)/(max−min))"
+      ]
+    },
+    {
+      "id": "coaxial_port",
+      "items": [
+        "coaxial_port"
+      ],
+      "diagram": "cable",
+      "formulas": [
+        "100 MHz: 0.20 dB/m; 1 dB/connector",
+        "6 mounting orientations; matching media only"
+      ]
+    },
+    {
+      "id": "coaxial_cable",
+      "items": [
+        "coaxial_cable"
+      ],
+      "diagram": "cable",
+      "formulas": [
+        "100 MHz: 0.20 dB/m; 1 dB/connector",
+        "length 0.01…1000 m; damage 0…100%"
+      ]
+    },
+    {
+      "id": "fiber_port",
+      "items": [
+        "fiber_port"
+      ],
+      "diagram": "cable",
+      "formulas": [
+        "100 MHz: 0.003 dB/m; 0.5 dB/connector",
+        "6 mounting orientations; matching media only"
+      ]
+    },
+    {
+      "id": "fiber_cable",
+      "items": [
+        "fiber_cable"
+      ],
+      "diagram": "cable",
+      "formulas": [
+        "100 MHz: 0.003 dB/m; 0.5 dB/connector",
+        "length 0.01…1000 m; damage 0…100%"
+      ]
+    },
+    {
+      "id": "metallic_port",
+      "items": [
+        "metallic_port"
+      ],
+      "diagram": "cable",
+      "formulas": [
+        "100 MHz: 0.50 dB/m; 2 dB/connector",
+        "6 mounting orientations; matching media only"
+      ]
+    },
+    {
+      "id": "metallic_cable",
+      "items": [
+        "metallic_cable"
+      ],
+      "diagram": "cable",
+      "formulas": [
+        "100 MHz: 0.50 dB/m; 2 dB/connector",
+        "length 0.01…1000 m; damage 0…100%"
+      ]
+    },
+    {
+      "id": "line_analyzer",
+      "items": [
+        "line_analyzer"
+      ],
+      "diagram": "circuit",
+      "formulas": [
+        "whole topology: ≤1024 nodes; ≤32 listed devices",
+        "read only; A/B/OUT labels"
+      ]
+    },
+    {
+      "id": "cable_wrench",
+      "items": [
+        "cable_wrench"
+      ],
+      "diagram": "cable",
+      "formulas": [
+        "cable: effective length and damage",
+        "port: cycle six mounting directions"
+      ]
+    },
+    {
+      "id": "signal_template",
+      "items": [
+        "signal_template"
+      ],
+      "diagram": "presets",
+      "formulas": [
+        "paper + applied device settings → reusable template",
+        "insert into the same kind of device"
+      ]
+    },
+    {
+      "id": "data_card",
+      "items": [
+        "data_card"
+      ],
+      "diagram": "spectrum",
+      "formulas": [
+        "512 samples + settings + metadata",
+        "read-only replay; export CSV"
+      ]
+    },
+    {
+      "id": "handbook",
+      "items": [
+        "handbook"
+      ],
+      "diagram": "equipment",
+      "formulas": [
+        "3 chapters: foundations / components / tasks",
+        "bookmark saved per player on this client"
+      ]
+    },
+    {
+      "id": "drawing_board",
+      "items": [
+        "drawing_board"
+      ],
+      "diagram": "drawing",
+      "formulas": [
+        "128×128 persistent pixels",
+        "editor and world show the same canvas"
+      ]
+    },
+    {
+      "id": "chalk",
+      "items": [
+        "white_chalk",
+        "orange_chalk",
+        "magenta_chalk",
+        "light_blue_chalk",
+        "yellow_chalk",
+        "lime_chalk",
+        "pink_chalk",
+        "gray_chalk",
+        "light_gray_chalk",
+        "cyan_chalk",
+        "purple_chalk",
+        "blue_chalk",
+        "brown_chalk",
+        "green_chalk",
+        "red_chalk",
+        "black_chalk"
+      ],
+      "diagram": "drawing",
+      "formulas": [
+        "4096 painted pixels per chalk",
+        "chalk + one dye → recolor, preserve wear"
+      ]
+    },
+    {
+      "id": "board_eraser",
+      "items": [
+        "board_eraser"
+      ],
+      "diagram": "drawing",
+      "formulas": [
+        "16384 touched pixels; does not break",
+        "water cauldron: restore, spend one water level"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "root",
+      "nodes": [
+        {
+          "item": "minecraft:book",
+          "parameters": [
+            "book + redstone",
+            "+ copper ingot"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:handbook",
+          "parameters": [
+            "right-click to read"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": ""
+        }
+      ]
+    },
+    {
+      "id": "first_link",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "calibrated",
+      "nodes": [
+        {
+          "item": "prscraft:cable_wrench",
+          "parameters": [
+            "right-click cable"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:coaxial_cable",
+          "parameters": [
+            "L=0.25 m",
+            "damage=0%"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": ""
+        }
+      ]
+    },
+    {
+      "id": "correlation",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · bits",
+            "10110010",
+            "RF=100 MHz; 20 dBm",
+            "Rb=10; random=OFF"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · bits",
+            "10110010",
+            "RF=100 MHz; 20 dBm",
+            "Rb=10; random=OFF"
+          ],
+          "x": 24,
+          "y": 385
+        },
+        {
+          "item": "prscraft:correlator",
+          "parameters": [
+            "Auto=OFF; normalize=ON",
+            "lag=0.1 s; T=8 s"
+          ],
+          "x": 262,
+          "y": 305
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 498,
+          "y": 305
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 2,
+          "label": "A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "B"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "label": "OUT"
+        }
+      ]
+    },
+    {
+      "id": "survey",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:amplifier",
+          "parameters": [
+            "gain=6 dB",
+            "A rear; OUT front"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "math_lab",
+      "nodes": [
+        {
+          "item": "prscraft:adder",
+          "parameters": [
+            "obtain this block",
+            "gA=1; gB=1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:integrator",
+          "parameters": [
+            "or obtain this block",
+            "T=0.5 s"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": ""
+        }
+      ]
+    },
+    {
+      "id": "microlink",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:coaxial_cable",
+          "parameters": [
+            "L=0.25 m",
+            "damage=0%"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "unipolar_link",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · bits",
+            "10110010",
+            "RF=100 MHz; 20 dBm",
+            "URZ; A1=1; Rb=10",
+            "random=OFF; duty=0.5"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "URZ; Rb=10; duty=0.5",
+            "expected A1≈0.7"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "noise_recovery",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · bits",
+            "10110010",
+            "RF=100 MHz; 20 dBm",
+            "NRZ: A0=−1; A1=1",
+            "Rb=10; random=OFF"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:modulator",
+          "parameters": [
+            "BPSK",
+            "fc=100 Hz; Rb=10"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX; RF=100 MHz",
+            "BPSK: fc=100; Rb=10",
+            "thermal=OFF; μ=0",
+            "variance=0.0004"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "superposition",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "cos(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 385
+        },
+        {
+          "item": "prscraft:adder",
+          "parameters": [
+            "gA=1; gB=1",
+            "A rear; B left along OUT"
+          ],
+          "x": 262,
+          "y": 305
+        },
+        {
+          "item": "prscraft:integrator",
+          "parameters": [
+            "T=0.3 s",
+            "output: u·s"
+          ],
+          "x": 498,
+          "y": 305
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 2,
+          "label": "A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "B"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "timing_lab",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:time_gate",
+          "parameters": [
+            "hold; T=0.05 s"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:integrator",
+          "parameters": [
+            "T=0.3 s"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "delay_hunt",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · bits",
+            "10110010",
+            "RF=100 MHz; 20 dBm",
+            "Rb=10; random=OFF"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · bits",
+            "10110010",
+            "RF=100 MHz; 20 dBm",
+            "Rb=10; random=OFF"
+          ],
+          "x": 24,
+          "y": 385
+        },
+        {
+          "item": "prscraft:delay_line",
+          "parameters": [
+            "D=0.02 s"
+          ],
+          "x": 262,
+          "y": 305
+        },
+        {
+          "item": "prscraft:correlator",
+          "parameters": [
+            "Auto=OFF; normalize=ON",
+            "lag=0.1 s; view=R(τ)"
+          ],
+          "x": 498,
+          "y": 305
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 3,
+          "label": "A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "label": "B"
+        }
+      ]
+    },
+    {
+      "id": "filter_lab",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)+3*cos(80)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:frequency_filter",
+          "parameters": [
+            "low=0; high=20 Hz"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "board_artist",
+      "nodes": [
+        {
+          "item": "prscraft:drawing_board",
+          "parameters": [
+            "brush=8×8",
+            "4 separate dabs"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:white_chalk",
+          "parameters": [
+            "2 dabs = 128 pixels"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:green_chalk",
+          "parameters": [
+            "1 dab = 64 pixels"
+          ],
+          "x": 498,
+          "y": 225
+        },
+        {
+          "item": "prscraft:blue_chalk",
+          "parameters": [
+            "1 dab = 64 pixels"
+          ],
+          "x": 498,
+          "y": 385
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": ""
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": ""
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "label": ""
+        }
+      ]
+    },
+    {
+      "id": "wash_eraser",
+      "nodes": [
+        {
+          "item": "prscraft:board_eraser",
+          "parameters": [
+            "16384 → 0 uses"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "minecraft:cauldron",
+          "parameters": [
+            "water level ≥1",
+            "right-click with eraser"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:board_eraser",
+          "parameters": [
+            "0 → 16384 uses"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": ""
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": ""
+        }
+      ]
+    },
+    {
+      "id": "deep_chain",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:amplifier",
+          "parameters": [
+            "gain=6 dB"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:frequency_filter",
+          "parameters": [
+            "low=0; high=50 Hz"
+          ],
+          "x": 498,
+          "y": 225
+        },
+        {
+          "item": "prscraft:delay_line",
+          "parameters": [
+            "D=0.01 s"
+          ],
+          "x": 498,
+          "y": 385
+        },
+        {
+          "item": "prscraft:time_gate",
+          "parameters": [
+            "hold; T=0 s"
+          ],
+          "x": 262,
+          "y": 385
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 24,
+          "y": 385
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "label": "OUT → A"
+        },
+        {
+          "from": 3,
+          "to": 4,
+          "label": "OUT → A"
+        },
+        {
+          "from": 4,
+          "to": 5,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "subtractor",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "cos(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 385
+        },
+        {
+          "item": "prscraft:adder",
+          "parameters": [
+            "gA=1; gB=−1"
+          ],
+          "x": 262,
+          "y": 305
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 498,
+          "y": 305
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 2,
+          "label": "A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "B"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "label": "OUT"
+        }
+      ]
+    },
+    {
+      "id": "signal_boost",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:amplifier",
+          "parameters": [
+            "gain=12 dB",
+            "keep output below ±16"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "self_similarity",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:correlator",
+          "parameters": [
+            "Auto=ON; normalize=ON",
+            "lag=0.1 s; view=R(τ)"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "fiber_link",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:fiber_port",
+          "parameters": [
+            "fiber port"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:fiber_cable",
+          "parameters": [
+            "L=1 m; damage=0%"
+          ],
+          "x": 498,
+          "y": 225
+        },
+        {
+          "item": "prscraft:fiber_port",
+          "parameters": [
+            "fiber port"
+          ],
+          "x": 498,
+          "y": 385
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 385
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "label": "OUT → A"
+        },
+        {
+          "from": 3,
+          "to": 4,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "copper_link",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:metallic_port",
+          "parameters": [
+            "metallic port"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:metallic_cable",
+          "parameters": [
+            "L=1 m; damage=0%"
+          ],
+          "x": 498,
+          "y": 225
+        },
+        {
+          "item": "prscraft:metallic_port",
+          "parameters": [
+            "metallic port"
+          ],
+          "x": 498,
+          "y": 385
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 385
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "label": "OUT → A"
+        },
+        {
+          "from": 3,
+          "to": 4,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "long_haul",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:coaxial_cable",
+          "parameters": [
+            "L=100 m",
+            "damage=0%"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "four_tones",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)+cos(20)",
+            "RF=100 MHz; 20 dBm",
+            "+sin(30)+cos(40)"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "full_palette",
+      "nodes": [
+        {
+          "item": "prscraft:drawing_board",
+          "parameters": [
+            "brush=16×16",
+            "32 nonoverlapping dabs"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:white_chalk",
+          "parameters": [
+            "8 different colors",
+            "4 dabs per color"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": ""
+        }
+      ]
+    },
+    {
+      "id": "analog_link",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm",
+            "fvz=100; II; duty=0.5",
+            "L=16"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "sampled_link",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · sampled",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm",
+            "fvz=100; II; duty=0.5",
+            "L=16"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "quantized_link",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · quantized",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm",
+            "fvz=100; II; duty=0.5",
+            "L=16"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "fine_quantization",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · quantized",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm",
+            "fvz=100 Hz; L=256",
+            "II; duty=0.5"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "natural_sampling",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · sampled",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm",
+            "fvz=100; duty=0.5",
+            "sampling kind=I"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "flat_sampling",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · sampled",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm",
+            "fvz=100; duty=0.5",
+            "sampling kind=II"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "unrz_decoder",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · bits",
+            "10110010",
+            "RF=100 MHz; 20 dBm",
+            "UNRZ; A1=1; Rb=10",
+            "random=OFF; duty=0.5"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "UNRZ; Rb=10; duty=0.5",
+            "expected A1≈0.7"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "urz_decoder",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · bits",
+            "10110010",
+            "RF=100 MHz; 20 dBm",
+            "URZ; A1=1; Rb=10",
+            "random=OFF; duty=0.5"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "URZ; Rb=10; duty=0.5",
+            "expected A1≈0.7"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "biased_bits",
+      "nodes": [
+        {
+          "item": "prscraft:bit_generator",
+          "parameters": [
+            "random=ON; P1=0.8",
+            "Rb=10; RF=100 MHz",
+            "A0=−1; A1=1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "finite_burst",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · bits",
+            "10110010",
+            "RF=100 MHz; 20 dBm",
+            "Rb=10; random=OFF",
+            "repeat=OFF; offset=0"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "offset_scan",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm",
+            "offset=0.025 s"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "power_source",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm",
+            "quantity=W; target=0.1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "energy_source",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · bits",
+            "10110010",
+            "RF=100 MHz; 20 dBm",
+            "Rb=10; random=repeat=OFF",
+            "quantity=J; target=0.1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "quiet_receiver",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · analog",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:coaxial_cable",
+          "parameters": [
+            "damage=0%; L=1 m"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "gray_binary",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · bits",
+            "10110010",
+            "RF=100 MHz; 20 dBm",
+            "Rb=10; A0=−1; A1=1",
+            "random=OFF"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:gray_converter",
+          "parameters": [
+            "Binary → Gray",
+            "width=4; Rb=10",
+            "threshold=0"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:gray_converter",
+          "parameters": [
+            "Gray → Binary",
+            "width=4; Rb=10",
+            "threshold=0"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "gray_levels",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX · quantized",
+            "sin(10)",
+            "RF=100 MHz; 20 dBm",
+            "fvz=100; L=4",
+            "II; duty=1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:gray_converter",
+          "parameters": [
+            "levels → Gray",
+            "width=2; L=4; fvz=100",
+            "min/max: calibrated input"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX · RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "decoder=Raw"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    }
+  ]
+}

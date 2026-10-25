@@ -89,6 +89,3 @@ for path in (root/'models/block').glob('*.json'):
  path.write_text(json.dumps(model,indent=2)+'\n')
 for medium in ['coaxial','fiber','metallic']:
  path=root/f'models/item/{medium}_cable.json';model=json.loads(path.read_text());model['textures']={'cable':f'prscraft:block/{medium}_jacket','particle':f'prscraft:block/{medium}_jacket'};path.write_text(json.dumps(model,indent=2)+'\n')
-# Distinct Gray-code paper profile in the template item selector.
-im=Image.new('RGBA',(32,32));d=ImageDraw.Draw(im);d.rectangle((3,1,28,30),fill='#e4e7d8',outline='#7f9b91');d.rectangle((4,2,27,9),fill='#3b9d8b');d.text((6,1),'GRAY',font=font,fill='#e4fff3');d.text((5,11),'1011',font=font,fill='#294c4a');d.line((9,21,23,21),fill='#4b8772');d.text((5,22),'1110',font=font,fill='#294c4a');(root/'textures/item').mkdir(exist_ok=True);im.save(root/'textures/item/gray_template.png')
-(root/'models/item/template_12.json').write_text(json.dumps({'parent':'minecraft:item/generated','textures':{'layer0':'prscraft:item/gray_template'}},indent=2)+'\n')

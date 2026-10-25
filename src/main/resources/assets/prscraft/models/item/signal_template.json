@@ -1,8 +1,5 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "minecraft:item/paper"
-  },
+  "parent": "prscraft:item/template_0",
   "overrides": [
     {
       "predicate": {

@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.148'
 }
-version = '0.7.1'
+version = '0.7.2'
 group = 'dev.jarofcucumbers.prscraft'
 base { archivesName = 'prscraft' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)

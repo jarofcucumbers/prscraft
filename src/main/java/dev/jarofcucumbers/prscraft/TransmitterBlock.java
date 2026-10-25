@@ -17,7 +17,7 @@ public class TransmitterBlock extends HorizontalDirectionalBlock implements Enti
     public static final IntegerProperty CHANNEL = IntegerProperty.create("channel", 0, 3);
     public static final BooleanProperty POWERED = BooleanProperty.create("powered");
     public TransmitterBlock(Properties properties) {
-        super(properties);
+        super(properties.noOcclusion());
         registerDefaultState(stateDefinition.any().setValue(FACING, net.minecraft.core.Direction.NORTH)
             .setValue(CHANNEL, 0).setValue(POWERED, true));
     }

@@ -8,6 +8,7 @@ public final class ChallengeRules{
         if(!data.getBoolean("connected"))return Set.of();var result=new HashSet<String>();
         var source=RadioSettings.read(data.getCompound("source"));var local=RadioSettings.read(data.getCompound("settings"));
         var decoder=ProcessorSettings.read(data.getCompound("processor"));String pipeline=data.getString("pipeline");String kind=data.getString("kind");
+        if(kind.equals("gray_converter")&&!data.getString("grayOutput").isEmpty())result.add(data.getCompound("gray").getString("mode").startsWith("levels_")?"gray_levels":"gray_binary");
         if(data.getInt("activeNodes")>=6)result.add("deep_chain");
         if(kind.equals("adder")&&data.getCompound("dsp").getDouble("b")<0&&energy(data.getIntArray("inputB"))>1e-8)result.add("subtractor");
         if(kind.equals("amplifier")){double in=energy(data.getIntArray("stageInput")),out=energy(data.getIntArray("received"));if(in>1e-8&&out>=4*in)result.add("signal_boost");}

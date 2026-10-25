@@ -15,6 +15,7 @@ public final class RadioClient {
             boolean dsp=java.util.Set.of("adder","integrator","correlator","time_gate","delay_line").contains(displayKind);
             minecraft.setScreen(displayKind.equals("gray_converter")?new GrayScreen(packet.pos(),packet.data()):kind.equals("drawing_board")?new BoardScreen(packet.pos(),packet.data()):dsp?new DspScreen(packet.pos(),packet.data()):kind.equals("cable")?new CableScreen(packet.pos(),packet.data()):kind.equals("analyzer")?new AnalyzerScreen(packet.pos(),packet.data()):kind.equals("radio")||kind.equals("bit_generator")?new RadioScreen(packet.pos(),packet.data()):new ProcessorScreen(packet.pos(),packet.data()));
         }
+        else if(minecraft.screen instanceof CircuitMapScreen map&&map.pos().equals(packet.pos())&&packet.data().getString("kind").equals("analyzer"))map.receive(packet.data());
         else if(minecraft.screen instanceof GrayScreen gray&&gray.pos().equals(packet.pos()))gray.receive(packet.data());
         else if(minecraft.screen instanceof BoardScreen board&&board.pos().equals(packet.pos()))board.receive(packet.data());
         else if(minecraft.screen instanceof CableScreen cable&&cable.pos().equals(packet.pos()))cable.receive(packet.data());

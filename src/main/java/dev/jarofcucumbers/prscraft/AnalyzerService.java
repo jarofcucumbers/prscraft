@@ -45,11 +45,20 @@ public final class AnalyzerService{
         for(var pos:nodes){if(medium(level,pos)==null||groups.containsKey(pos))continue;var m=medium(level,pos);queue.clear();queue.add(pos);groups.put(pos,group);
             while(!queue.isEmpty()){var node=queue.remove();for(Direction d:Direction.values()){var next=node.relative(d);if(nodes.contains(next)&&!groups.containsKey(next)&&medium(level,next)==m){groups.put(next,group);queue.add(next);}}}group++;
         }
-        ListTag connections=new ListTag();
-        for(int g=0;g<group;g++){List<Integer> members=new ArrayList<>();for(int i=0;i<devicePositions.size();i++){
-                for(Direction d:Direction.values())if(Objects.equals(groups.get(devicePositions.get(i).relative(d)),g)){members.add(i);break;}}
-            for(int i=0;i<members.size();i++)for(int j=i+1;j<members.size();j++)if(connections.size()<128){var edge=new CompoundTag();edge.putInt("a",members.get(i));edge.putInt("b",members.get(j));edge.putInt("bus",g);connections.add(edge);}}
-        data.put("connections",connections);data.putInt("nodes",nodes.size());data.putInt("ports",ports);data.putInt("cables",cables);data.putInt("deviceCount",deviceCount);data.putDouble("wireMetres",wireMetres);data.putString("medium",start.medium.name());data.putBoolean("truncated",nodes.size()>=1024||deviceCount>32);data.put("devices",devices);
+        ListTag connections=new ListTag();boolean edgesTruncated=false;
+        record Attachment(int device,Direction side,String role){}
+        for(int g=0;g<group;g++){
+            List<Attachment> members=new ArrayList<>();double busMetres=0;String busMedium="";
+            for(var groupNode:groups.entrySet())if(groupNode.getValue()==g){busMedium=medium(level,groupNode.getKey()).name();if(level.getBlockState(groupNode.getKey()).getBlock() instanceof CableBlock)busMetres+=CircuitNetwork.cable(level,groupNode.getKey()).metres();}
+            for(int i=0;i<devicePositions.size();i++)for(Direction d:Direction.values())if(Objects.equals(groups.get(devicePositions.get(i).relative(d)),g))members.add(new Attachment(i,d,role((RadioBlockEntity)level.getBlockEntity(devicePositions.get(i)),d)));
+            for(int i=0;i<members.size();i++)for(int j=i+1;j<members.size();j++){
+                if(connections.size()>=128){edgesTruncated=true;continue;}var a=members.get(i);var b=members.get(j);var edge=new CompoundTag();edge.putInt("a",a.device());edge.putInt("b",b.device());edge.putInt("bus",g);
+                edge.putString("aRole",a.role());edge.putString("bRole",b.role());edge.putString("aSide",a.side().getName());edge.putString("bSide",b.side().getName());edge.putString("medium",busMedium);edge.putDouble("busMetres",busMetres);
+                boolean ab=java.util.Set.of("TX","OUT").contains(a.role())&&java.util.Set.of("RX","A","B").contains(b.role());
+                boolean ba=java.util.Set.of("TX","OUT").contains(b.role())&&java.util.Set.of("RX","A","B").contains(a.role());edge.putString("direction",ab?"ab":ba?"ba":"physical");connections.add(edge);
+            }
+        }
+        data.put("connections",connections);data.putInt("nodes",nodes.size());data.putInt("ports",ports);data.putInt("cables",cables);data.putInt("deviceCount",deviceCount);data.putDouble("wireMetres",wireMetres);data.putString("medium",start.medium.name());data.putBoolean("truncated",nodes.size()>=1024||deviceCount>32||edgesTruncated);data.put("devices",devices);
         if(chosen==null)chosen=first;
         if(chosen!=null){data.putInt("selectedX",chosen.getX());data.putInt("selectedY",chosen.getY());data.putInt("selectedZ",chosen.getZ());
             for(int i=0;i<devices.size();i++){var t=devices.getCompound(i);if(t.getInt("x")==chosen.getX()&&t.getInt("y")==chosen.getY()&&t.getInt("z")==chosen.getZ())data.putString("portRoles",t.getString("portRoles"));}

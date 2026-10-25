@@ -5,29 +5,59 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 public final class HandbookScreen extends PanelScreen {
-    private final Screen parent;private int page,contentsPage;private boolean contents=true;
-    public HandbookScreen(Screen parent){super(Component.translatable("item.prscraft.handbook"),720,560);this.parent=parent;}
+    private final Screen parent;
+    private HandbookCurriculum.Chapter chapter;private String entry;private int contentsPage;private boolean contents,revealed;
+    public HandbookScreen(Screen parent){super(Component.translatable("item.prscraft.handbook"),720,600);this.parent=parent;var bookmark=HandbookBookmarks.load();chapter=bookmark.chapter();entry=bookmark.entry();contents=bookmark.contents();contentsPage=bookmark.contentsPage();}
+    private java.util.List<String> entries(){return HandbookCurriculum.entries(chapter);}
+    private void remember(){HandbookBookmarks.save(new HandbookBookmark(chapter,entry,contents,contentsPage));}
     private void refresh(){clearWidgets();build();}
+    private void open(String id){entry=id;contents=false;revealed=false;remember();refresh();}
+    private void chapter(HandbookCurriculum.Chapter next){chapter=next;entry=entries().getFirst();contents=true;contentsPage=0;revealed=false;remember();refresh();}
     @Override protected void build(){
-        button(14,526,110,tr("back"),b->onClose());button(132,526,150,tr("contents"),b->{contents=!contents;refresh();});
-        if(contents){button(460,526,110,Component.literal("←"),b->{contentsPage=Math.floorMod(contentsPage-1,(HandbookContent.PAGES.size()+29)/30);refresh();});button(582,526,110,Component.literal("→"),b->{contentsPage=(contentsPage+1)%((HandbookContent.PAGES.size()+29)/30);refresh();});for(int i=contentsPage*30;i<Math.min(HandbookContent.PAGES.size(),(contentsPage+1)*30);i++){final int index=i;var p=HandbookContent.PAGES.get(i);button(14+((i%30)/10)*234,64+(i%10)*38,220,Component.translatable("book.prscraft."+p.id()+".title"),b->{page=index;contents=false;refresh();});}}
-        else {button(460,526,110,Component.literal("←"),b->{page=Math.floorMod(page-1,HandbookContent.PAGES.size());});button(582,526,110,Component.literal("→"),b->{page=(page+1)%HandbookContent.PAGES.size();});}
-    }
-    @Override public void onClose(){minecraft.setScreen(parent);}
-    @Override protected void draw(GuiGraphics g){
-        g.drawString(font,"PRSCraft "+HandbookContent.VERSION,520,10,0xff9bd7ec,false);
-        if(contents){label(g,"book_intro",18,42);g.drawString(font,(contentsPage+1)+" / "+((HandbookContent.PAGES.size()+29)/30),332,532,0xffbacbdb,false);return;}
-        var content=HandbookContent.PAGES.get(page);
-        g.drawString(font,Component.translatable("book.prscraft."+content.id()+".title"),18,45,0xfff2d494,false);
-        g.drawWordWrap(font,Component.translatable("book.prscraft."+content.id()+".body"),18,78,320,0xffd5e1ed);
-        g.fill(356,74,702,300,0xff0b1420);diagram(g,content.diagram());
-        int y=320;for(String formula:content.formulas()){
-            g.pose().pushPose();g.pose().translate(18,y,0);g.pose().scale(1.65f,1.65f,1);
-            g.drawWordWrap(font,Component.literal(formula),0,0,410,0xffa7f5c9);g.pose().popPose();
-            y+=font.split(Component.literal(formula),410).size()*15+8;
+        for(var value:HandbookCurriculum.Chapter.values()){int x=14+value.ordinal()*234;var b=button(x,42,224,tr("chapter_"+value.name().toLowerCase(java.util.Locale.ROOT)),w->chapter(value));b.active=value!=chapter;}
+        button(14,568,110,tr("back"),b->onClose());button(132,568,150,tr("contents"),b->{contents=true;revealed=false;remember();refresh();});
+        if(contents){int total=(entries().size()+17)/18;
+            button(460,568,110,Component.literal("←"),b->{contentsPage=Math.floorMod(contentsPage-1,total);remember();refresh();});button(582,568,110,Component.literal("→"),b->{contentsPage=(contentsPage+1)%total;remember();refresh();});
+            for(int i=contentsPage*18;i<Math.min(entries().size(),(contentsPage+1)*18);i++){String id=entries().get(i);button(18+((i%18)/9)*350,116+(i%9)*44,334,Component.translatable(HandbookCurriculum.titleKey(chapter,id)),b->open(id));}
+        }else{
+            button(460,568,110,Component.literal("←"),b->open(entries().get(Math.floorMod(entries().indexOf(entry)-1,entries().size()))));button(582,568,110,Component.literal("→"),b->open(entries().get((entries().indexOf(entry)+1)%entries().size())));
+            if(chapter==HandbookCurriculum.Chapter.TASKS)button(14,538,250,tr(revealed?"hide_solution":"show_solution"),b->{revealed=!revealed;refresh();});
         }
-        g.drawWordWrap(font,Component.translatable("book.prscraft."+content.id()+".symbols"),18,Math.max(440,y+4),680,0xffd5e1ed);
-        g.drawString(font,(page+1)+" / "+HandbookContent.PAGES.size(),330,532,0xffbacbdb,false);
+    }
+    @Override public void removed(){remember();super.removed();}
+    @Override public void onClose(){remember();minecraft.setScreen(parent);}
+    @Override protected void draw(GuiGraphics g){
+        g.drawString(font,"PRSCraft "+HandbookContent.VERSION,500,10,0xff9bd7ec,false);
+        if(contents){label(g,"book_chapter_intro",18,84);g.drawString(font,(contentsPage+1)+" / "+((entries().size()+17)/18),332,574,0xffbacbdb,false);return;}
+        g.drawString(font,Component.translatable(HandbookCurriculum.titleKey(chapter,entry)),18,82,0xfff2d494,false);
+        g.drawString(font,(entries().indexOf(entry)+1)+" / "+entries().size(),332,574,0xffbacbdb,false);
+        if(chapter==HandbookCurriculum.Chapter.TASKS){drawTask(g);return;}
+        var content=HandbookCurriculum.page(entry);g.drawWordWrap(font,Component.translatable("book.prscraft."+entry+".body"),18,112,320,0xffd5e1ed);
+        g.fill(356,108,702,334,0xff0b1420);g.pose().pushPose();g.pose().translate(0,34,0);diagram(g,content.diagram());g.pose().popPose();
+        int y=350;for(String formula:content.formulas()){g.pose().pushPose();g.pose().translate(18,y,0);g.pose().scale(1.65f,1.65f,1);g.drawWordWrap(font,Component.literal(formula),0,0,410,0xffa7f5c9);g.pose().popPose();y+=font.split(Component.literal(formula),410).size()*15+7;}
+        g.drawWordWrap(font,Component.translatable("book.prscraft."+entry+".symbols"),18,Math.max(452,y+4),680,0xffd5e1ed);
+    }
+    private void drawTask(GuiGraphics g){
+        g.drawWordWrap(font,Component.translatable("advancements.prscraft."+entry+".description"),18,112,680,0xffd5e1ed);
+        // Do not draw any solution text, formulas, wiring or nodes before explicit reveal.
+        if(!revealed)return;
+        g.drawWordWrap(font,Component.translatable("book.task."+entry+".solution"),18,150,680,0xffa7f5c9);
+        var task=HandbookCurriculum.task(entry);
+        for(var edge:task.edges()){
+            var a=task.nodes().get(edge.from());var b=task.nodes().get(edge.to());double angle=Math.atan2(b.y()-a.y(),b.x()-a.x());
+            int sx=a.x()+96,sy=a.y()+56,ex=b.x()+96,ey=b.y()+56;
+            if(Math.abs(b.x()-a.x())>=Math.abs(b.y()-a.y())){sx+=b.x()>a.x()?96:-96;ex+=b.x()>a.x()?-96:96;}else{sy+=b.y()>a.y()?56:-56;ey+=b.y()>a.y()?-56:56;}
+            line(g,sx,sy,ex,ey,0xff56b6b5);for(double delta:new double[]{-.5,.5})line(g,ex,ey,ex-(int)(8*Math.cos(angle+delta)),ey-(int)(8*Math.sin(angle+delta)),0xff56b6b5);
+            if(!edge.label().isEmpty())g.drawString(font,edge.label(),(sx+ex)/2-14,(sy+ey)/2-10,0xfff4d188,false);
+        }
+        for(var node:task.nodes()){
+            int x=node.x(),y=node.y();g.fill(x,y,x+192,y+112,0xff22394b);g.fill(x,y,x+192,y+2,0xff68c7b4);
+            var item=net.minecraft.core.registries.BuiltInRegistries.ITEM.get(net.minecraft.resources.ResourceLocation.parse(node.item()));var stack=new ItemStack(item);g.renderItem(stack,x+6,y+9);
+            g.drawString(font,font.plainSubstrByWidth(stack.getHoverName().getString(),158),x+28,y+12,0xfff2d494,false);
+            int row=y+32;for(String parameter:node.parameters()){g.drawWordWrap(font,Component.literal(parameter),x+8,row,176,0xffdae8ec);row+=font.split(Component.literal(parameter),176).size()*10+2;}
+        }
+        boolean signal=task.nodes().stream().anyMatch(n->n.item().equals("prscraft:transmitter")||n.item().equals("prscraft:bit_generator"));
+        if(signal)g.drawWordWrap(font,tr("task_common").copy().append(" ").append(tr("task_wiring")),18,506,680,0xffb7cad7);
     }
     private void diagram(GuiGraphics g,String kind){
         if(kind.equals("gray")){
