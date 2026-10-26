@@ -1,0 +1,15 @@
+package dev.jarofcucumbers.prscraft.client;
+import dev.jarofcucumbers.prscraft.*;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+public final class ProtocolScreen extends PanelScreen{
+    private final Screen parent;private final BlockPos pos;private CompoundTag data;private EditBox payload,retries,ack,timeout;private String error="";
+    public ProtocolScreen(Screen parent,BlockPos pos,CompoundTag data){super(Component.translatable("screen.prscraft.protocol"),760,520);this.parent=parent;this.pos=pos;this.data=data;}public BlockPos pos(){return pos;}public void receive(CompoundTag next){data=next;error=next.getString("error");}
+    @Override protected void build(){var cfg=ProtocolSettings.read(data.getCompound("protocol"));payload=field(14,68,170,Integer.toString(cfg.payloadBytes()),8,"packet_payload");retries=field(200,68,170,Integer.toString(cfg.retries()),8,"packet_retries");ack=field(386,68,170,Double.toString(cfg.ackLoss()),12,"packet_ack_loss");timeout=field(572,68,174,Double.toString(cfg.timeout()),12,"packet_timeout");button(14,112,350,tr("apply"),b->{try{if(number(payload)!=(int)number(payload)||number(retries)!=(int)number(retries))throw new IllegalArgumentException("protocol");var cfgNext=new ProtocolSettings((int)number(payload),(int)number(retries),number(ack),number(timeout));var t=data.getCompound("settings").copy();t.put("protocol",cfgNext.save());RadioClient.request(new RadioNetwork.Request(pos,true,t));}catch(IllegalArgumentException e){error=e.getMessage();}});button(14,476,350,tr("back"),b->onClose());button(386,476,360,tr("book"),b->minecraft.setScreen(new HandbookScreen(this)));if(data.getBoolean("recorded")||data.getBoolean("analysis"))for(var w:renderables)if(w instanceof net.minecraft.client.gui.components.AbstractWidget v&&v.getY()<200)v.active=false;}
+    @Override protected void draw(GuiGraphics g){String[] labels={"packet_payload","packet_retries","packet_ack_loss","packet_timeout"};for(int i=0;i<4;i++)label(g,labels[i],14+i*186,48);var stats=data.getCompound("protocolStats");String[] rows={"frames="+stats.getInt("frames")+" · transmissions="+stats.getInt("transmissions"),"attempts="+stats.getInt("attempts")+" · retries="+stats.getInt("retries"),"CRC rejected="+stats.getInt("rejected")+" · duplicates="+stats.getInt("duplicates"),"ACK lost="+stats.getInt("ackLost")+" · delivered="+stats.getBoolean("delivered")+" · ACK="+stats.getBoolean("acknowledged"),"total sent="+stats.getLong("transmittedBits")+" bit · goodput="+fmt(stats.getDouble("goodput"))+" bit/s"};for(int i=0;i<rows.length;i++)g.drawString(font,rows[i],14,174+i*33,0xffc8e3d8,false);g.drawWordWrap(font,tr("protocol_help"),14,366,732,0xffa9cbd9);if(!error.isEmpty())g.drawString(font,Component.translatable("error.prscraft."+error),14,446,0xffffae7d,false);}
+    @Override public void onClose(){minecraft.setScreen(parent);}
+}

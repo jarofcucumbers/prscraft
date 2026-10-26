@@ -28,8 +28,8 @@ public final class LabScreen extends PanelScreen {
         button(560,185,146,tr("apply"),b->save());button(14,426,150,tr("back"),b->onClose());button(176,426,190,tr("book"),b->minecraft.setScreen(new HandbookScreen(this)));
     }
     private LabSettings draft(){return new LabSettings(repeat,random,number(probability),number(a0),number(a1),samples.getValue(),Long.parseLong(seed.getValue()),number(offset),number(mu),number(variance),normalized,quantity,number(target),lineCode);}
-    private void save(){try{var next=saved.withLab(draft());var data=next.save();data.put("processor",snapshot.getCompound("processor"));PacketDistributor.sendToServer(new RadioNetwork.Request(pos,true,data));error="";}catch(NumberFormatException e){error="number";}catch(IllegalArgumentException e){error=e.getMessage();}}
-    @Override public void tick(){if(minecraft.player==null||minecraft.player.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>64){onClose();return;}if(++ticks%40==0)PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,new CompoundTag()));}
+    private void save(){try{var next=saved.withLab(draft());var data=next.save();data.put("processor",snapshot.getCompound("processor"));RadioClient.request(new RadioNetwork.Request(pos,true,data));error="";}catch(NumberFormatException e){error="number";}catch(IllegalArgumentException e){error=e.getMessage();}}
+    @Override public void tick(){if(minecraft.player==null||!RadioClient.inRange(pos)){onClose();return;}if(++ticks%40==0)RadioClient.request(new RadioNetwork.Request(pos,false,new CompoundTag()));}
     @Override public void onClose(){minecraft.setScreen(new RadioScreen(pos,snapshot));}
     @Override protected void draw(GuiGraphics g){
         String[] keys={"p1","a0","a1","noise_mean","noise_variance"};int[] xs={14,146,278,410,562};for(int i=0;i<keys.length;i++)label(g,keys[i],xs[i],42);

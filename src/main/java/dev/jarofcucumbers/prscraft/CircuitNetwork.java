@@ -5,11 +5,16 @@ import java.util.*;
 /** A passive segment ends at a device; active processing is evaluated separately. */
 public final class CircuitNetwork{
     private CircuitNetwork(){}
-    public record Route(BlockPos endpoint,double metres,double lossDb,double noiseVariance,double damageLoss,SignalBudget.Medium medium,List<BlockPos> path){}
+    public record Route(BlockPos endpoint,double metres,double lossDb,double noiseVariance,double damageLoss,SignalBudget.Medium medium,List<BlockPos> path,double dispersion,double environmentalLoss,double environmentalVariance){
+        public Route(BlockPos endpoint,double metres,double lossDb,double noiseVariance,double damageLoss,SignalBudget.Medium medium,List<BlockPos> path){this(endpoint,metres,lossDb,noiseVariance,damageLoss,medium,path,0,0,0);}
+    }
+    public static CableSettings cable(Level level,BlockPos pos){return cable(CircuitAccess.of(level),pos);}
+    public static List<Route> inputs(Level level,BlockPos root,Direction side,Double carrier){return inputs(CircuitAccess.of(level),root,side,carrier);}
     private record Visit(BlockPos pos,double distance){}
-    public static boolean passive(Level level,BlockPos pos,SignalBudget.Medium medium){if(!level.hasChunkAt(pos))return false;var b=level.getBlockState(pos).getBlock();return b instanceof CableBlock c&&c.medium==medium||b instanceof PortBlock p&&p.medium==medium;}
-    public static CableSettings cable(Level level,BlockPos pos){return level.getBlockEntity(pos) instanceof CableBlockEntity c?c.settings():CableSettings.DEFAULT;}
-    public static List<Route> inputs(Level level,BlockPos root,Direction side,Double carrier){
+    public static boolean passive(CircuitAccess level,BlockPos pos,SignalBudget.Medium medium){if(!level.hasChunkAt(pos))return false;var b=level.getBlockState(pos).getBlock();return b instanceof CableBlock c&&c.medium==medium||b instanceof PortBlock p&&p.medium==medium;}
+    public static CableSettings cable(CircuitAccess level,BlockPos pos){return level.getBlockEntity(pos) instanceof CableBlockEntity c?c.settings():CableSettings.DEFAULT;}
+    public static List<Route> inputs(CircuitAccess level,BlockPos root,Direction side,Double carrier){
+        var virtual=level.routes(root,side,carrier);if(virtual!=null)return virtual;
         Map<BlockPos,Route> candidates=new HashMap<>();
         for(var medium:SignalBudget.Medium.values()){
             Map<BlockPos,Double> distances=new HashMap<>();Map<BlockPos,BlockPos> parent=new HashMap<>();Set<BlockPos> settled=new HashSet<>();
@@ -22,11 +27,11 @@ public final class CircuitNetwork{
                         if(device.isSource()){
                             if(!device.settings().transmit()||carrier!=null&&Math.abs(carrier-device.settings().carrierMHz())>.001)continue;
                         }else if(!pos.equals(endpoint.relative(device.getBlockState().getValue(TransmitterBlock.FACING))))continue;
-                        List<BlockPos> path=new ArrayList<>();BlockPos cursor=pos;double extra=0,variance=0;
-                        while(cursor!=null){path.add(cursor);if(level.getBlockState(cursor).getBlock() instanceof CableBlock){var c=cable(level,cursor);extra+=c.extraLossDb();variance+=c.noiseVariance();}cursor=parent.get(cursor);}
+                        List<BlockPos> path=new ArrayList<>();BlockPos cursor=pos;double extra=0,variance=0,dispersion=0,envLoss=0,envVariance=0;
+                        while(cursor!=null){path.add(cursor);if(level.getBlockState(cursor).getBlock() instanceof CableBlock){var c=cable(level,cursor);extra+=c.extraLossDb();variance+=c.noiseVariance();dispersion+=c.dispersion()*c.metres();if(c.environment()){var env=level.environment(cursor,medium,c.metres());envLoss+=env.lossDb();envVariance+=env.variance();}}cursor=parent.get(cursor);}
                         double metres=visit.distance()+1,frequency=carrier==null?device.settings().carrierMHz():carrier;
-                        double loss=medium.lossDb(metres,frequency)+medium.lossDb(0,frequency)+extra;
-                        var candidate=new Route(endpoint.immutable(),metres,loss,variance,extra,medium,List.copyOf(path));
+                        double loss=medium.lossDb(metres,frequency)+medium.lossDb(0,frequency)+extra+envLoss;
+                        var candidate=new Route(endpoint.immutable(),metres,loss,variance+envVariance,extra,medium,List.copyOf(path),dispersion,envLoss,envVariance);
                         var old=candidates.get(endpoint);if(old==null||candidate.lossDb()<old.lossDb())candidates.put(endpoint,candidate);
                     }
                 }

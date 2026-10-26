@@ -11,7 +11,7 @@ im=Image.new('RGBA',(32,32));d=ImageDraw.Draw(im);d.polygon([(6,2),(23,2),(28,7)
 for x in range(11,22,3):d.line((x,9,x,11),fill='#e0b56e');d.line((x,23,x,26),fill='#e0b56e')
 for y in range(13,23,3):d.line((7,y,9,y),fill='#c7ddcf');d.line((22,y,25,y),fill='#c7ddcf')
 d.point((24,26),fill='#a6e494');save('data_card',im)
-profiles=[('BLANK','#8b999a'),('TX','#40af84'),('RX','#468ac4'),('AMP','#cf944e'),('FLT','#4baac4'),('MOD','#9f72bf'),('BIT','#ca7864'),('SUM','#bea44f'),('INT','#c286aa'),('COR','#57a880'),('GATE','#bf6e73'),('DLY','#6d8ac3'),('GRAY','#4ea999'),('TXT','#4da88a'),('ZIP','#bfac6b'),('FEC','#a582c0'),('RXD','#65a6c7')]
+profiles=[('BLANK','#8b999a'),('TX','#40af84'),('RX','#468ac4'),('AMP','#cf944e'),('FLT','#4baac4'),('MOD','#9f72bf'),('BIT','#ca7864'),('SUM','#bea44f'),('INT','#c286aa'),('COR','#57a880'),('GATE','#bf6e73'),('DLY','#6d8ac3'),('GRAY','#4ea999'),('TXT','#4da88a'),('ZIP','#bfac6b'),('FEC','#a582c0'),('RXD','#65a6c7'),('IQ','#79b7c5'),('FRM','#c4a277'),('ARQ','#79b58a'),('ORTH','#b999c9')]
 for i,(label,accent) in enumerate(profiles):
  im=Image.new('RGBA',(32,32));d=ImageDraw.Draw(im);d.polygon([(4,1),(23,1),(28,6),(28,30),(4,30)],fill='#647f82');d.polygon([(5,2),(22,2),(27,7),(27,29),(5,29)],fill='#e5e7d5');d.rectangle((5,2,22,8),fill=accent);d.polygon([(22,2),(27,7),(22,7)],fill='#b1c8c0');d.text((6,2),label,font=ImageFont.load_default(size=6) if len(label)>3 else font,fill='#112f3c')
  if i:
@@ -21,7 +21,7 @@ for i,(label,accent) in enumerate(profiles):
   for y in [13,18,23]:d.line((8,y,23,y),fill='#a1b9b2')
  for y in [11,16,21,26]:d.rectangle((3,y,5,y+1),fill='#96a6a2')
  save('template_'+str(i),im)
-model={'parent':'prscraft:item/template_0','overrides':[{'predicate':{'prscraft:profile':i},'model':f'prscraft:item/template_{i}'} for i in range(1,17)]};(root/'models/item/signal_template.json').write_text(json.dumps(model,indent=2)+'\n')
+model={'parent':'prscraft:item/template_0','overrides':[{'predicate':{'prscraft:profile':i},'model':f'prscraft:item/template_{i}'} for i in range(1,21)]};(root/'models/item/signal_template.json').write_text(json.dumps(model,indent=2)+'\n')
 
 # Original handheld line analyzer: protected case, CRT trace, rotary dial and probe.
 im=Image.new('RGBA',(32,32));d=ImageDraw.Draw(im)

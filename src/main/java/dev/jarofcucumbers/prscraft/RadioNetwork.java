@@ -44,20 +44,21 @@ public final class RadioNetwork {
         };
         public Type<? extends CustomPacketPayload> type(){return TYPE;}
     }
-    public record TuneCable(BlockPos pos,double metres,double damage) implements CustomPacketPayload{
+    public record TuneCable(BlockPos pos,double metres,double damage,double dispersion,boolean environment) implements CustomPacketPayload{
+        public TuneCable(BlockPos pos,double metres,double damage){this(pos,metres,damage,0,true);}
         public static final Type<TuneCable> TYPE=new Type<>(ResourceLocation.fromNamespaceAndPath(PRSCraft.ID,"tune_cable"));
         public static final StreamCodec<RegistryFriendlyByteBuf,TuneCable> CODEC=new StreamCodec<>(){
-            public TuneCable decode(RegistryFriendlyByteBuf b){return new TuneCable(b.readBlockPos(),b.readDouble(),b.readDouble());}
-            public void encode(RegistryFriendlyByteBuf b,TuneCable p){b.writeBlockPos(p.pos);b.writeDouble(p.metres);b.writeDouble(p.damage);}
+            public TuneCable decode(RegistryFriendlyByteBuf b){return new TuneCable(b.readBlockPos(),b.readDouble(),b.readDouble(),b.readDouble(),b.readBoolean());}
+            public void encode(RegistryFriendlyByteBuf b,TuneCable p){b.writeBlockPos(p.pos);b.writeDouble(p.metres);b.writeDouble(p.damage);b.writeDouble(p.dispersion);b.writeBoolean(p.environment);}
         };public Type<? extends CustomPacketPayload> type(){return TYPE;}
     }
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("8");
+        var registrar = event.registrar("9");
         registrar.playToServer(TuneCable.TYPE,TuneCable.CODEC,(request,context)->context.enqueueWork(()->{
             if(!(context.player() instanceof ServerPlayer player))return;
             if(!player.getMainHandItem().is(PRSCraft.WRENCH.get())&&!player.getOffhandItem().is(PRSCraft.WRENCH.get()))return;
             var level=player.serverLevel();if(player.distanceToSqr(request.pos.getX()+.5,request.pos.getY()+.5,request.pos.getZ()+.5)>64||!level.hasChunkAt(request.pos)||!player.mayBuild()||!level.mayInteract(player,request.pos)||!(level.getBlockEntity(request.pos) instanceof CableBlockEntity cable))return;
-            String error="";try{cable.configure(new CableSettings(request.metres,request.damage));Milestones.award(player,"calibrated");}catch(IllegalArgumentException e){error=e.getMessage();}
+            String error="";try{cable.configure(new CableSettings(request.metres,request.damage,request.dispersion,request.environment));Milestones.award(player,"calibrated");}catch(IllegalArgumentException e){error=e.getMessage();}
             CableTuning.send(player,request.pos,false,error);
         }));
         registrar.playToServer(Analyze.TYPE,Analyze.CODEC,(request,context)->context.enqueueWork(()->{
@@ -103,13 +104,7 @@ public final class RadioNetwork {
             if (request.save) {
                 if (!player.mayBuild() || !level.mayInteract(player, request.pos)) error = "permission";
                 else try {
-                    RadioSettings next=RadioSettings.read(request.data);
-                    ProcessorSettings processor=request.data.contains("processor")?ProcessorSettings.read(request.data.getCompound("processor")):radio.processor();
-                    MessageSettings message=request.data.contains("message")?MessageSettings.read(request.data.getCompound("message")):radio.message();
-                    GraySettings gray=request.data.contains("gray")?GraySettings.read(request.data.getCompound("gray")):radio.gray();
-                    DspSettings dsp=request.data.contains("dsp")?DspSettings.read(request.data.getCompound("dsp")):radio.dsp();
-                    if(processor.demodulate()&&java.util.Set.of("unrz","urz").contains(processor.modulation())&&next.lab().amplitudeOne()<=0)throw new IllegalArgumentException("line_code");
-                    radio.validateMessage(message);radio.validateRadio(next);radio.configureMessage(message);radio.configure(next);radio.configureProcessor(processor);radio.configureDsp(dsp);radio.configureGray(gray);
+                    DeviceConfiguration.apply(radio,request.data);
                     if(request.data.contains("graphLayers"))radio.graph(request.data.getInt("graphLayers"),request.data.getInt("graphTerms"));
                 }
                 catch (IllegalArgumentException e) { error = e.getMessage(); }

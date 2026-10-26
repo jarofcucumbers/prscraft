@@ -25,8 +25,8 @@ public final class DspScreen extends PanelScreen{
             button(462,56,244,tr(normalized?"corr_normalized":"corr_raw"),w->{normalized=!normalized;w.setMessage(tr(normalized?"corr_normalized":"corr_raw"));});
             button(462,90,244,tr(automatic?"corr_auto":"corr_cross"),w->{automatic=!automatic;w.setMessage(tr(automatic?"corr_auto":"corr_cross"));});
         }
-        button(14,96,100,Component.literal(enabled?"ON":"OFF"),b1->{enabled=!enabled;b1.setMessage(Component.literal(enabled?"ON":"OFF"));});button(126,96,150,tr("apply"),b1->save());button(288,96,160,tr("media"),b1->{var t=new CompoundTag();t.putString("action","media");PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,t));});
-        if(kind.equals("correlator"))button(14,423,210,tr("corr_view"),b1->{lagView=!lagView;if(!recorded){var t=new CompoundTag();t.putString("action","view");t.putInt("graphLayers",data.getInt("graphLayers"));t.putInt("graphTerms",data.getInt("graphTerms"));t.putBoolean("correlationView",lagView);PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,t));}});
+        button(14,96,100,Component.literal(enabled?"ON":"OFF"),b1->{enabled=!enabled;b1.setMessage(Component.literal(enabled?"ON":"OFF"));});button(126,96,150,tr("apply"),b1->save());button(288,96,160,tr("media"),b1->{var t=new CompoundTag();t.putString("action","media");RadioClient.request(new RadioNetwork.Request(pos,false,t));});
+        if(kind.equals("correlator"))button(14,423,210,tr("corr_view"),b1->{lagView=!lagView;if(!recorded){var t=new CompoundTag();t.putString("action","view");t.putInt("graphLayers",data.getInt("graphLayers"));t.putInt("graphTerms",data.getInt("graphTerms"));t.putBoolean("correlationView",lagView);RadioClient.request(new RadioNetwork.Request(pos,false,t));}});
         button(350,4,110,tr("oscilloscope"),w->minecraft.setScreen(new PlotScreen(this,data)));
         button(468,4,110,tr("spectrum"),b1->minecraft.setScreen(new SpectrumScreen(this,data)));button(586,4,120,tr("book"),b1->minecraft.setScreen(new HandbookScreen(this)));
         if(recorded)for(var r:renderables)if(r instanceof AbstractWidget w&&w.getY()>28&&w.getY()<400)w.active=false;
@@ -35,9 +35,10 @@ public final class DspScreen extends PanelScreen{
         double a=number(first),b=second.visible?number(second):0;
         var next=new DspSettings(kind.equals("integrator")?a:kind.equals("correlator")?b:saved.endSeconds(),kind.equals("time_gate")?a:saved.gateSeconds(),kind.equals("time_gate")?b:saved.gateWidth(),hold,
             kind.equals("delay_line")?a:saved.delaySeconds(),kind.equals("correlator")?a:saved.lagSeconds(),normalized,automatic,kind.equals("adder")?a:saved.gainA(),kind.equals("adder")?b:saved.gainB());
-        var t=data.getCompound("settings").copy();t.putBoolean("enabled",enabled);t.put("processor",data.getCompound("processor"));t.put("dsp",next.save());PacketDistributor.sendToServer(new RadioNetwork.Request(pos,true,t));error="";
+        var t=data.getCompound("settings").copy();t.putBoolean("enabled",enabled);t.put("processor",data.getCompound("processor"));t.put("dsp",next.save());RadioClient.request(new RadioNetwork.Request(pos,true,t));error="";
     }catch(NumberFormatException e){error="number";}catch(IllegalArgumentException e){error=e.getMessage();}}
-    @Override public void tick(){if(recorded)return;if(minecraft.player==null||minecraft.player.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>64){onClose();return;}if(++ticks%20==0)PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,new CompoundTag()));}
+    @Override public void onClose(){RadioClient.closeDevice(null);}
+    @Override public void tick(){if(recorded)return;if(minecraft.player==null||!RadioClient.inRange(pos)){onClose();return;}if(++ticks%20==0)RadioClient.request(new RadioNetwork.Request(pos,false,new CompoundTag()));}
     @Override protected void draw(GuiGraphics g){
         label(g,firstKey(),14,42);if(second.visible)label(g,secondKey(),238,42);label(g,"dsp_ports",14,138);
         if(!error.isEmpty())g.drawString(font,Component.translatable("error.prscraft."+error),14,158,0xffff7788,false);

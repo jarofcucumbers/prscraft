@@ -8,6 +8,6 @@ public final class CableBlockEntity extends BlockEntity{
     public CableBlockEntity(BlockPos pos,BlockState state){super(PRSCraft.CABLE_ENTITY.get(),pos,state);}
     public CableSettings settings(){return settings;}
     public void configure(CableSettings settings){this.settings=settings;setChanged();}
-    @Override protected void saveAdditional(CompoundTag tag,HolderLookup.Provider registries){super.saveAdditional(tag,registries);tag.putDouble("metres",settings.metres());tag.putDouble("damage",settings.damage());}
-    @Override protected void loadAdditional(CompoundTag tag,HolderLookup.Provider registries){super.loadAdditional(tag,registries);if(tag.contains("metres"))try{settings=new CableSettings(tag.getDouble("metres"),tag.getDouble("damage"));}catch(IllegalArgumentException ignored){settings=CableSettings.DEFAULT;}}
+    @Override protected void saveAdditional(CompoundTag tag,HolderLookup.Provider registries){super.saveAdditional(tag,registries);tag.putDouble("metres",settings.metres());tag.putDouble("damage",settings.damage());tag.putDouble("dispersion",settings.dispersion());tag.putBoolean("environment",settings.environment());}
+    @Override protected void loadAdditional(CompoundTag tag,HolderLookup.Provider registries){super.loadAdditional(tag,registries);if(tag.contains("metres"))try{settings=new CableSettings(tag.getDouble("metres"),tag.getDouble("damage"),tag.getDouble("dispersion"),!tag.contains("environment")||tag.getBoolean("environment"));}catch(IllegalArgumentException ignored){settings=CableSettings.DEFAULT;}}
 }

@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:root",
+  "display": {
+    "icon": {
+      "id": "prscraft:research_notebook"
+    },
+    "title": {
+      "translate": "advancements.prscraft.protocol_entry.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.protocol_entry.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

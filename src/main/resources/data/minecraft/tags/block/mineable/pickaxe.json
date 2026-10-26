@@ -20,6 +20,11 @@
     "prscraft:message_source",
     "prscraft:message_codec",
     "prscraft:channel_coder",
-    "prscraft:message_receiver"
+    "prscraft:message_receiver",
+    "prscraft:digital_modem",
+    "prscraft:packet_sender",
+    "prscraft:packet_receiver",
+    "prscraft:orthogonality_meter",
+    "prscraft:simulator"
   ]
 }

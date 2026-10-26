@@ -1,0 +1,10 @@
+package dev.jarofcucumbers.prscraft;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+class IqSignalTest{
+ @Test void everySymbolAndPartialSymbolRoundTrips(){for(String mode:new String[]{"qpsk","qam16"})for(int length=0;length<64;length++){var w=new BitStream.Writer();var r=new java.util.Random(length);for(int k=0;k<length;k++)w.bit(r.nextBoolean());var b=w.finish();var iq=IqSignal.encode(b,mode);assertArrayEquals(b.bytes(),iq.decisions().bytes());assertEquals(length,iq.decisions().bitLength());}}
+ @Test void averageEnergyIsOneForUniformAlphabet(){var w=new BitStream.Writer();for(int i=0;i<16;i++)w.number(i,4);for(String mode:new String[]{"qpsk","qam16"}){var iq=IqSignal.encode(w.finish(),mode);double energy=0;for(int k=0;k<iq.i().length;k++)energy+=iq.i()[k]*iq.i()[k]+iq.q()[k]*iq.q()[k];assertEquals(1,energy/iq.i().length,1e-12);}}
+ @Test void grayNeighboursDifferByOneBit(){int[] labels={0,1,3,2};for(int k=1;k<labels.length;k++)assertEquals(1,Integer.bitCount(labels[k]^labels[k-1]));}
+ @Test void noiseActuallyChangesQuadraturesAndDecisions(){var input=BitStream.of(new byte[1000]);var iq=IqSignal.encode(input,"qpsk");assertArrayEquals(input.bytes(),iq.channel(.8,0,0,4,false).decisions().bytes());assertFalse(java.util.Arrays.equals(input.bytes(),iq.channel(.8,0,1,4,false).decisions().bytes()));assertNotEquals(iq.q()[0],iq.channel(1,0,.1,42,false).q()[0]);}
+ @Test void modemPipelineRetainsExactUtf8AndRejectsUndemodulatedRx(){var s=new MessageSettings("utf8","Привіт 🌍","raw",1000,0,-1,1,0);for(String mode:new String[]{"qpsk","qam16"}){var signal=MessageSignal.source(s,true,1).modem(s.operation(mode+"_encode")).channel(.85,0,0,42,false);var bad=new net.minecraft.nbt.CompoundTag();signal.describe(bad,s,true);assertEquals("modem_required",bad.getString("messageError"));var decoded=signal.modem(s.operation(mode+"_decode"));var data=new net.minecraft.nbt.CompoundTag();decoded.describe(data,s,true);assertTrue(data.getBoolean("messageMatch"));}}
+}

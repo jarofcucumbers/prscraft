@@ -89,7 +89,7 @@ public final class RadioScreen extends Screen {
             else {String[] modes={"raw","bpsk","unrz","urz"};decodeMode=modes[(java.util.Arrays.asList(modes).indexOf(decodeMode)+1)%modes.length];demodulate=!decodeMode.equals("raw");}
             serverError="";visibility();
         });
-        button(528,170,178,tr("media"),b->{flushView();var tag=new CompoundTag();tag.putString("action","media");PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,tag));});
+        button(528,170,178,tr("media"),b->{flushView();var tag=new CompoundTag();tag.putString("action","media");RadioClient.request(new RadioNetwork.Request(pos,false,tag));});
         button(232,4,110,tr("oscilloscope"),b->{flushView();minecraft.setScreen(new PlotScreen(this,snapshot));});
         button(350,4,110,tr("lab_short"),b->{flushView();minecraft.setScreen(snapshot.getBoolean("dataStream")?new MessageScreen(pos,snapshot):new LabScreen(pos,snapshot));});
         button(468,4,110,tr("spectrum"),b->{flushView();minecraft.setScreen(new SpectrumScreen(this,snapshot));});
@@ -100,7 +100,7 @@ public final class RadioScreen extends Screen {
             termButtons.add(button(14+i*87,448,81,Component.literal((showTerm[i]?"● ":"○ ")+"f"+(i+1)).withColor(COLORS[i]&0xffffff),b->{showTerm[index]=!showTerm[index];b.setMessage(Component.literal((showTerm[index]?"● ":"○ ")+"f"+(index+1)).withColor(COLORS[index]&0xffffff));}));
         }
         visibility();
-        if(recorded)for(var renderable:renderables)if(renderable instanceof AbstractWidget widget && widget.getY()<216 && !(widget.getY()==4 && widget.getX()>=468))widget.active=false;
+        if(recorded)for(var renderable:renderables)if(renderable instanceof AbstractWidget widget && widget.getY()<216 && !(widget.getY()==4 && (widget.getX()==232||widget.getX()>=468)))widget.active=false;
     }
     private static String input(double n) { return java.math.BigDecimal.valueOf(n).stripTrailingZeros().toPlainString(); }
     private static String fmt(double n) { if(n != 0 && Math.abs(n) < 0.0001) return String.format(Locale.ROOT,"%.2e",n); return String.format(Locale.ROOT,"%.4f",n).replaceAll("0+$", "").replaceAll("\\.$", ""); }
@@ -129,22 +129,22 @@ public final class RadioScreen extends Screen {
     private int viewCode(){int layers=(showSum?1:0)|(showSample?2:0)|(showQuant?4:0)|(showRx?8:0)|(frozen?16:0),terms=0;
         for(int i=0;i<8;i++)if(showTerm[i])terms|=1<<i;return (layers<<8)|terms;}
     private void view(CompoundTag tag){int code=viewCode();tag.putInt("graphLayers",code>>8);tag.putInt("graphTerms",code&255);}
-    private void flushView(){if(!recorded&&sentView!=viewCode()){var tag=new CompoundTag();tag.putString("action","view");view(tag);PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,tag));sentView=viewCode();}}
-    @Override public void onClose(){flushView();super.onClose();}
+    private void flushView(){if(!recorded&&sentView!=viewCode()){var tag=new CompoundTag();tag.putString("action","view");view(tag);RadioClient.request(new RadioNetwork.Request(pos,false,tag));sentView=viewCode();}}
+    @Override public void onClose(){flushView();RadioClient.closeDevice(null);}
     private void save() {
         try {
             RadioSettings config = draft();
             var tag=config.save();tag.put("processor",draftDecoder().save());view(tag);
             pending=true; pendingTicks=0; serverError="";
-            PacketDistributor.sendToServer(new RadioNetwork.Request(pos,true,tag));sentView=viewCode();
+            RadioClient.request(new RadioNetwork.Request(pos,true,tag));sentView=viewCode();
         } catch (IllegalArgumentException ignored) { /* render displays validation errors */ }
     }
     @Override public void tick() {
         if(recorded)return;
-        if (minecraft.player == null || minecraft.level == null || minecraft.player.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>64
-            || !(minecraft.level.getBlockState(pos).getBlock() instanceof TransmitterBlock)) { onClose(); return; }
+        if (minecraft.player == null || minecraft.level == null || !RadioClient.inRange(pos)
+            || (SimulationClient.root==null&&!(minecraft.level.getBlockState(pos).getBlock() instanceof TransmitterBlock))) { onClose(); return; }
         if(++viewTicks%5==0)flushView();
-        if (++ticks % 20 == 0 && !pending && !frozen) PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,new CompoundTag()));
+        if (++ticks % 20 == 0 && !pending && !frozen) RadioClient.request(new RadioNetwork.Request(pos,false,new CompoundTag()));
         if (pending && ++pendingTicks>=100) { pending=false; serverError="timeout"; }
     }
     private void text(GuiGraphics g,String key,int x,int y,int color) { g.drawString(font,tr(key),x,y,color,false); }

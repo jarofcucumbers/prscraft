@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "prscraft:block/digital_modem",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "prscraft:block/digital_modem",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "prscraft:block/digital_modem",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "prscraft:block/digital_modem",
+      "y": 270
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:root",
+  "display": {
+    "icon": {
+      "id": "prscraft:simulator"
+    },
+    "title": {
+      "translate": "advancements.prscraft.simulator_lab.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.simulator_lab.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

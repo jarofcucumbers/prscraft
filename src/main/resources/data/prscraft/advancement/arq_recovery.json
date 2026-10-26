@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:packets_verified",
+  "display": {
+    "icon": {
+      "id": "prscraft:packet_receiver"
+    },
+    "title": {
+      "translate": "advancements.prscraft.arq_recovery.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.arq_recovery.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

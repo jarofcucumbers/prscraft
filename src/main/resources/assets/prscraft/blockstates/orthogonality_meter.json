@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "prscraft:block/orthogonality_meter",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "prscraft:block/orthogonality_meter",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "prscraft:block/orthogonality_meter",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "prscraft:block/orthogonality_meter",
+      "y": 270
+    }
+  }
+}

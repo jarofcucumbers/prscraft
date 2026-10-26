@@ -1,0 +1,21 @@
+package dev.jarofcucumbers.prscraft.client;
+import dev.jarofcucumbers.prscraft.*;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import java.util.*;
+public final class SimulatorBoardScreen extends PanelScreen{
+    private byte[] pixels;private final MapViewport view=new MapViewport(16);private int color=1,brush=1,x0,y0,lastX,lastY;private boolean drawing,pan;private BoardDrawing.Shape shape=BoardDrawing.Shape.FREEHAND;private EditBox text;private final BitSet pending=new BitSet(16384);
+    public SimulatorBoardScreen(CompoundTag data){super(Component.translatable("block.prscraft.drawing_board"),800,600);pixels=BoardPixels.read(data.getByteArray("pixels"));view.fit(128,128,540,470);view.zoomAt(2,270,235);}
+    public void receive(CompoundTag data){pixels=BoardPixels.read(data.getByteArray("pixels"));}
+    @Override protected void build(){for(int i=0;i<=16;i++){final int c=i;button(566+(i%4)*54,42+(i/4)*38,48,Component.literal(i==0?"×":Integer.toString(i)).withColor(BoardPixels.color(i)&0xffffff),b->color=c);}button(566,250,220,Component.literal(shape.name()),b->{var all=BoardDrawing.Shape.values();shape=all[(shape.ordinal()+1)%all.length];b.setMessage(Component.literal(shape.name()));});button(566,292,220,Component.literal("brush "+brush),b->{brush=brush==16?1:brush*2;b.setMessage(Component.literal("brush "+brush));});text=field(566,344,220,text==null?"":text.getValue(),64,"board_text");button(566,390,220,tr("plot_auto"),b->{view.fit(128,128,540,470);view.zoomAt(2,270,235);});button(566,434,220,tr("board_clear_all"),b->{pending.set(0,16384);send(0);});button(14,560,250,tr("back"),b->onClose());}
+    private void send(int c){if(pending.isEmpty())return;var data=new CompoundTag();data.putByteArray("mask",pending.toByteArray());data.putInt("color",c);for(int at=pending.nextSetBit(0);at>=0;at=pending.nextSetBit(at+1))pixels[at]=(byte)c;SimulationClient.send("board",data);pending.clear();}
+    private int px(double x){return Math.max(0,Math.min(127,(int)view.worldX(localX(x)-14)));}private int py(double y){return Math.max(0,Math.min(127,(int)view.worldY(localY(y)-42)));}
+    @Override protected void draw(GuiGraphics g){g.fill(14,42,554,532,0xff0a1420);var m=g.pose().last().pose();var a=m.transformPosition(14,42,0,new org.joml.Vector3f());var b=m.transformPosition(554,532,0,new org.joml.Vector3f());g.enableScissor((int)a.x,(int)a.y,(int)b.x,(int)b.y);g.pose().pushPose();g.pose().translate(14+view.x(),42+view.y(),0);g.pose().scale((float)view.zoom(),(float)view.zoom(),1);for(int i=0;i<16384;i++)g.fill(i%128,i/128,i%128+1,i/128+1,BoardPixels.color(pixels[i]));for(int at=pending.nextSetBit(0);at>=0;at=pending.nextSetBit(at+1))g.fill(at%128,at/128,at%128+1,at/128+1,BoardPixels.color(color));g.pose().popPose();g.flush();g.disableScissor();g.drawWordWrap(font,tr("sim_board_help"),566,480,220,0xffc5dadd);}
+    @Override public boolean mouseClicked(double x,double y,int button){if(super.mouseClicked(x,y,button))return true;double lx=localX(x),ly=localY(y);if(lx<14||lx>554||ly<42||ly>532)return false;if(button==1){pan=true;return true;}if(button==0){x0=lastX=px(x);y0=lastY=py(y);drawing=true;if(shape==BoardDrawing.Shape.TEXT){for(int p:BoardDrawing.text(text.getValue(),x0,y0,1))pending.set(p);send(color);drawing=false;}else for(int p:BoardPixels.brush(x0,y0,brush))pending.set(p);return true;}return false;}
+    @Override public boolean mouseDragged(double x,double y,int button,double dx,double dy){if(pan){view.pan(dx/scale,dy/scale);return true;}if(drawing){int cx=px(x),cy=py(y);if(shape!=BoardDrawing.Shape.FREEHAND)pending.clear();for(int p:BoardDrawing.shape(shape,shape==BoardDrawing.Shape.FREEHAND?lastX:x0,shape==BoardDrawing.Shape.FREEHAND?lastY:y0,cx,cy,brush))pending.set(p);lastX=cx;lastY=cy;return true;}return super.mouseDragged(x,y,button,dx,dy);}
+    @Override public boolean mouseReleased(double x,double y,int button){if(drawing){send(color);drawing=false;}pan=false;return super.mouseReleased(x,y,button);}
+    @Override public boolean mouseScrolled(double x,double y,double h,double v){view.zoomAt(Math.pow(1.15,v),localX(x)-14,localY(y)-42);return true;}
+    @Override public void onClose(){SimulationClient.back();}
+}

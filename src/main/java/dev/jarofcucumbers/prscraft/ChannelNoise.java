@@ -3,8 +3,8 @@ import net.minecraft.core.*;
 import net.minecraft.world.level.Level;
 public final class ChannelNoise{
     private ChannelNoise(){}
-    public static double interferenceRms(Level level, BlockPos receiver, BlockPos sourcePos, SignalBudget.Medium medium, RadioSettings settings) {
-        if (!settings.thermal() || medium.coupling() == 0) return 0;
+    public static double interferenceRms(CircuitAccess level, BlockPos receiver, BlockPos sourcePos, SignalBudget.Medium medium, RadioSettings settings) {
+        if (!level.physicalInterference()||!settings.thermal() || medium.coupling() == 0) return 0;
         double mw = 0;
         for (BlockPos pos : BlockPos.betweenClosed(receiver.offset(-4,-4,-4), receiver.offset(4,4,4))) {
             if (pos.equals(sourcePos) || !level.hasChunkAt(pos)) continue;

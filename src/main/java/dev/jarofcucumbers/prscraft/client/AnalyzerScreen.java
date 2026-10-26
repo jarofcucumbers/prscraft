@@ -45,6 +45,9 @@ public final class AnalyzerScreen extends PanelScreen {
             "P1="+fmt(source.lab().probabilityOne())+" · A0="+fmt(source.lab().amplitudeZero())+" · A1="+fmt(source.lab().amplitudeOne()),
             source.signalMode().equals("discrete")?source.lab().samples():source.signalMode().equals("bits")?(source.lab().randomBits()?"Bernoulli seed="+source.lab().seed():source.bits()):source.expression(),
             "BPSK: "+capture.getString("decoded"),data.getString("portRoles")};
+        rows[8]="τ="+fmt(capture.getDouble("dispersion"))+" s · env="+fmt(capture.getDouble("environmentalLoss"))+" dB · σ²env="+fmt(capture.getDouble("environmentalVariance"));
+        if(capture.contains("orthogonalityResult")){var r=capture.getCompound("orthogonalityResult");rows[6]="<A,B>="+fmt(r.getDouble("inner"))+" · ρ="+fmt(r.getDouble("rho"));rows[7]="valid="+r.getBoolean("valid")+" · orthogonal="+r.getBoolean("orthogonal")+" · N="+r.getInt("count");}
+        else if(capture.getBoolean("dataStream")){rows[6]="Rb="+fmt(capture.getDouble("messageRate"))+" bit/s · wire="+capture.getInt("messageWireBits")+" bit";rows[7]=capture.contains("iqMode")?capture.getString("iqMode")+" · Rs="+fmt(capture.getDouble("symbolRate"))+" sym/s":"message match="+capture.getBoolean("messageMatch")+" · BER="+fmt(capture.getDouble("messageBer"));}
         for(int i=0;i<rows.length;i++)g.drawString(font,font.plainSubstrByWidth(rows[i],420),282,91+i*15,0xffc3d6e4,false);
         g.fill(282,270,706,383,0xff0b1420);double[] input=SignalChain.unpack(capture.getIntArray("stageInput")),received=SignalChain.unpack(packed);double range=1;
         for(double[] values:new double[][]{input,received})for(double value:values)range=Math.max(range,Math.abs(value)*1.1);

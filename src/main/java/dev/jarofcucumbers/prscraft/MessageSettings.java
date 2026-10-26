@@ -6,7 +6,7 @@ public record MessageSettings(String inputMode,String text,String operation,doub
     public static final int MAX_TEXT_BYTES=1024;
     public static final MessageSettings DEFAULT=new MessageSettings("utf8","Привіт, Minecraft! AAAAAAAAAAAAAAAA","raw",1000,0,-1,1,0);
     public MessageSettings{
-        if(!java.util.Set.of("utf8","hex").contains(inputMode)||!java.util.Set.of("raw","rle","huffman","decode","crc_encode","crc_decode","hamming_encode","hamming_decode","custom_encode","custom_decode").contains(operation))throw new IllegalArgumentException("data_settings");
+        if(!java.util.Set.of("utf8","hex").contains(inputMode)||!java.util.Set.of("raw","rle","huffman","decode","crc_encode","crc_decode","hamming_encode","hamming_decode","custom_encode","custom_decode","qpsk_encode","qpsk_decode","qam16_encode","qam16_decode").contains(operation))throw new IllegalArgumentException("data_settings");
         sourceBytes(inputMode,text);
         for(double value:new double[]{bitRate,threshold,zero,one})if(!Double.isFinite(value))throw new IllegalArgumentException("data_settings");
         if(bitRate<1||bitRate>20000||zero>=one||zero < -100||one>100||Math.abs(threshold)>100||previewOffset<0||previewOffset>=BitStream.MAX_BYTES*8)throw new IllegalArgumentException("data_settings");

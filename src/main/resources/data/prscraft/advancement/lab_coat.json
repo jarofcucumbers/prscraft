@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:root",
+  "display": {
+    "icon": {
+      "id": "prscraft:doctoral_coat"
+    },
+    "title": {
+      "translate": "advancements.prscraft.lab_coat.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.lab_coat.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

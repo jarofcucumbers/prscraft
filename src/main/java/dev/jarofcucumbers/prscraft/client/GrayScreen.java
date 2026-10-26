@@ -15,7 +15,7 @@ public final class GrayScreen extends PanelScreen{
     private void visibility(){boolean level=mode.startsWith("levels_");rate.visible=threshold.visible=!level;levels.visible=minimum.visible=maximum.visible=sample.visible=level;}
     @Override protected void build(){
         button(14,42,280,tr("gray_"+mode),b->{String[] modes={"binary_to_gray","gray_to_binary","levels_to_binary","levels_to_gray"};mode=modes[(java.util.Arrays.asList(modes).indexOf(mode)+1)%4];b.setMessage(tr("gray_"+mode));visibility();});
-        button(308,42,90,Component.literal(enabled?"ON":"OFF"),b->{enabled=!enabled;b.setMessage(Component.literal(enabled?"ON":"OFF"));});button(412,42,132,tr("apply"),b->save());button(558,42,148,tr("media"),b->{var t=new CompoundTag();t.putString("action","media");PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,t));});
+        button(308,42,90,Component.literal(enabled?"ON":"OFF"),b->{enabled=!enabled;b.setMessage(Component.literal(enabled?"ON":"OFF"));});button(412,42,132,tr("apply"),b->save());button(558,42,148,tr("media"),b->{var t=new CompoundTag();t.putString("action","media");RadioClient.request(new RadioNetwork.Request(pos,false,t));});
         width=input(14,96,saved.wordBits(),width,"gray_width");rate=input(190,96,saved.bitRate(),rate,"bit_rate");threshold=input(366,96,saved.threshold(),threshold,"gray_threshold");low=input(14,142,saved.low(),low,"gray_low");high=input(190,142,saved.high(),high,"gray_high");
         levels=input(366,96,saved.levels(),levels,"levels");sample=input(542,96,saved.sampleHz(),sample,"sample");minimum=input(366,142,saved.minimum(),minimum,"gray_min");maximum=input(542,142,saved.maximum(),maximum,"gray_max");visibility();
         button(350,4,110,tr("oscilloscope"),b->minecraft.setScreen(new PlotScreen(this,data)));
@@ -24,9 +24,10 @@ public final class GrayScreen extends PanelScreen{
     }
     private void save(){try{
         var next=new GraySettings(mode,Integer.parseInt(width.getValue()),rate.visible?number(rate):saved.bitRate(),threshold.visible?number(threshold):saved.threshold(),number(low),number(high),levels.visible?Integer.parseInt(levels.getValue()):saved.levels(),minimum.visible?number(minimum):saved.minimum(),maximum.visible?number(maximum):saved.maximum(),sample.visible?number(sample):saved.sampleHz());
-        var tag=data.getCompound("settings").copy();tag.putBoolean("enabled",enabled);tag.put("gray",next.save());PacketDistributor.sendToServer(new RadioNetwork.Request(pos,true,tag));error="";
+        var tag=data.getCompound("settings").copy();tag.putBoolean("enabled",enabled);tag.put("gray",next.save());RadioClient.request(new RadioNetwork.Request(pos,true,tag));error="";
     }catch(NumberFormatException e){error="number";}catch(IllegalArgumentException e){error=e.getMessage();}}
-    @Override public void tick(){if(recorded)return;if(minecraft.player==null||minecraft.player.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>64){onClose();return;}if(++ticks%20==0)PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,new CompoundTag()));}
+    @Override public void onClose(){RadioClient.closeDevice(null);}
+    @Override public void tick(){if(recorded)return;if(minecraft.player==null||!RadioClient.inRange(pos)){onClose();return;}if(++ticks%20==0)RadioClient.request(new RadioNetwork.Request(pos,false,new CompoundTag()));}
     @Override protected void draw(GuiGraphics g){
         label(g,"gray_width",14,82);if(rate.visible)label(g,"bit_rate",190,82);if(threshold.visible)label(g,"gray_threshold",366,82);label(g,"gray_low",14,128);label(g,"gray_high",190,128);
         if(levels.visible){label(g,"levels",366,82);label(g,"sample",542,82);label(g,"gray_min",366,128);label(g,"gray_max",542,128);}

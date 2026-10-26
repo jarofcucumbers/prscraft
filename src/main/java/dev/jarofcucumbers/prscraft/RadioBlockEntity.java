@@ -7,6 +7,8 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public final class RadioBlockEntity extends BlockEntity {
     private RadioSettings settings = RadioSettings.DEFAULT;
+    private OrthogonalitySettings orthogonality=OrthogonalitySettings.DEFAULT;public OrthogonalitySettings orthogonality(){return orthogonality;}public void configureOrthogonality(OrthogonalitySettings value){orthogonality=value;setChanged();}
+    private ProtocolSettings protocol=ProtocolSettings.DEFAULT;public ProtocolSettings protocol(){return protocol;}public void configureProtocol(ProtocolSettings value){protocol=value;setChanged();}
     private PlotSettings plot=PlotSettings.DEFAULT;
     public PlotSettings plot(){return plot;}
     public void configurePlot(PlotSettings value){plot=value;setChanged();}
@@ -14,6 +16,7 @@ public final class RadioBlockEntity extends BlockEntity {
     private MessageSettings message=MessageSettings.DEFAULT;
     public MessageSettings message(){return message;}
     public void validateMessage(MessageSettings value){
+        if((kind().equals("digital_modem")&&!java.util.Set.of("qpsk_encode","qpsk_decode","qam16_encode","qam16_decode").contains(value.operation()))||(java.util.Set.of("packet_sender","packet_receiver").contains(kind())&&!value.operation().equals("raw")))throw new IllegalArgumentException("data_settings");
         if(kind().equals("message_receiver")&&!java.util.Set.of("raw","decode","crc_decode","hamming_decode").contains(value.operation())||kind().equals("message_source")&&!value.operation().equals("raw")||kind().equals("message_codec")&&!java.util.Set.of("raw","rle","huffman","decode","custom_encode","custom_decode").contains(value.operation())||kind().equals("channel_coder")&&!java.util.Set.of("raw","crc_encode","crc_decode","hamming_encode","hamming_decode").contains(value.operation()))throw new IllegalArgumentException("data_settings");
     }
     public void configureMessage(MessageSettings value){validateMessage(value);message=value;setChanged();}
@@ -39,7 +42,7 @@ public final class RadioBlockEntity extends BlockEntity {
         }
     };
     public String kind(){return getBlockState().getBlock() instanceof ProcessorBlock block?block.kind:getBlockState().getBlock() instanceof BitGeneratorBlock?"bit_generator":"radio";}
-    public boolean isSource(){return kind().equals("radio")||kind().equals("bit_generator")||kind().equals("message_source")||kind().equals("message_receiver");}
+    public boolean isSource(){return kind().equals("radio")||kind().equals("bit_generator")||kind().equals("message_source")||kind().equals("message_receiver")||kind().equals("packet_receiver");}
     public ProcessorSettings processor(){return processor;}
     public void configureProcessor(ProcessorSettings value){processor=value;setChanged();}
     public int graphLayers(){return graphLayers;}
@@ -56,17 +59,20 @@ public final class RadioBlockEntity extends BlockEntity {
             var nextProcessor=ProcessorSettings.read(tag.getCompound("processor"));
             DspSettings nextDsp=tag.contains("dsp")?DspSettings.read(tag.getCompound("dsp")):DspSettings.DEFAULT;
             GraySettings nextGray=tag.contains("gray")?GraySettings.read(tag.getCompound("gray")):GraySettings.DEFAULT;
+            OrthogonalitySettings nextOrthogonality=tag.contains("orthogonality")?OrthogonalitySettings.read(tag.getCompound("orthogonality")):OrthogonalitySettings.DEFAULT;
+            ProtocolSettings nextProtocol=tag.contains("protocol")?ProtocolSettings.read(tag.getCompound("protocol")):ProtocolSettings.DEFAULT;
             PlotSettings nextPlot=tag.contains("plot")?PlotSettings.read(tag.getCompound("plot")):PlotSettings.DEFAULT;
             MessageSettings nextMessage=tag.contains("message")?MessageSettings.read(tag.getCompound("message")):message;
-            validateMessage(nextMessage);validateRadio(next);configureMessage(nextMessage);configureGray(nextGray);configure(next);configureProcessor(nextProcessor);configureDsp(nextDsp);configurePlot(nextPlot);correlationView(tag.getBoolean("correlationView"));graph(tag.getInt("graphLayers"),tag.getInt("graphTerms"));return true;
+            validateMessage(nextMessage);validateRadio(next);configureMessage(nextMessage);configureGray(nextGray);configure(next);configureProcessor(nextProcessor);configureDsp(nextDsp);configurePlot(nextPlot);configureProtocol(nextProtocol);configureOrthogonality(nextOrthogonality);correlationView(tag.getBoolean("correlationView"));graph(tag.getInt("graphLayers"),tag.getInt("graphTerms"));return true;
         }catch(IllegalArgumentException ignored){return false;}
     }
     public RadioBlockEntity(BlockPos pos, BlockState state) {
         super(PRSCraft.RADIO_ENTITY.get(), pos, state);
-        if(java.util.Set.of("message_source","message_codec","channel_coder","message_receiver").contains(kind())){var t=settings.save();t.putBoolean("thermal",false);t.putDouble("noiseRms",0);t.put("lab",LabSettings.defaults(0).save());settings=RadioSettings.read(t);}
+        if(java.util.Set.of("message_source","message_codec","channel_coder","message_receiver","digital_modem","packet_sender","packet_receiver").contains(kind())){var t=settings.save();t.putBoolean("thermal",false);t.putDouble("noiseRms",0);t.put("lab",LabSettings.defaults(0).save());settings=RadioSettings.read(t);}
+        if(kind().equals("digital_modem"))message=MessageSettings.DEFAULT.operation("qpsk_encode");
         if(kind().equals("message_codec"))message=MessageSettings.DEFAULT.operation("rle");
         if(kind().equals("channel_coder"))message=MessageSettings.DEFAULT.operation("hamming_encode");
-        if(kind().equals("message_receiver")){var t=settings.save();t.putBoolean("transmit",false);t.putBoolean("thermal",false);t.putDouble("noiseRms",0);t.put("lab",LabSettings.defaults(0).save());settings=RadioSettings.read(t);}
+        if(kind().equals("message_receiver")||kind().equals("packet_receiver")){var t=settings.save();t.putBoolean("transmit",false);t.putBoolean("thermal",false);t.putDouble("noiseRms",0);t.put("lab",LabSettings.defaults(0).save());settings=RadioSettings.read(t);}
         if(state.getBlock() instanceof BitGeneratorBlock){
             var lab=LabSettings.defaults(.02);
             settings=new RadioSettings("sin(10)",100,16,true,true,true,.02,100,20,true,.5,"bits","10110010",10,
@@ -76,18 +82,20 @@ public final class RadioBlockEntity extends BlockEntity {
     public RadioSettings settings() { return settings; }
     public void validateRadio(RadioSettings settings) {
         if(kind().equals("bit_generator")&&(!settings.transmit()||!settings.signalMode().equals("bits")))throw new IllegalArgumentException("generator_mode");
-        if(kind().equals("message_source")&&!settings.transmit()||kind().equals("message_receiver")&&settings.transmit())throw new IllegalArgumentException("data_role");
+        if(kind().equals("message_source")&&!settings.transmit()||(kind().equals("message_receiver")||kind().equals("packet_receiver"))&&settings.transmit())throw new IllegalArgumentException("data_role");
     }
     public void configure(RadioSettings settings){validateRadio(settings);this.settings = settings; setChanged();
         if (level != null) level.setBlock(worldPosition, getBlockState().setValue(TransmitterBlock.POWERED, settings.enabled()), 3);
     }
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries); tag.put("radio", settings.save());tag.put("message",message.save());tag.put("plot",plot.save());
+        super.saveAdditional(tag, registries); tag.put("radio", settings.save());tag.put("message",message.save());tag.put("plot",plot.save());tag.put("protocol",protocol.save());tag.put("orthogonality",orthogonality.save());
         tag.put("gray",gray.save());tag.putBoolean("correlationView",correlationView);tag.put("dsp",dsp.save());tag.put("processor",processor.save());tag.putInt("graphLayers",graphLayers);tag.putInt("graphTerms",graphTerms);
         tag.put("media",media.serializeNBT(registries));
     }
     @Override protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
+        if(tag.contains("orthogonality"))try{orthogonality=OrthogonalitySettings.read(tag.getCompound("orthogonality"));}catch(IllegalArgumentException ignored){orthogonality=OrthogonalitySettings.DEFAULT;}
+        if(tag.contains("protocol"))try{protocol=ProtocolSettings.read(tag.getCompound("protocol"));}catch(IllegalArgumentException ignored){protocol=ProtocolSettings.DEFAULT;}
         if(tag.contains("gray"))try{gray=GraySettings.read(tag.getCompound("gray"));}catch(IllegalArgumentException ignored){gray=GraySettings.DEFAULT;}
         if(tag.contains("message"))try{configureMessage(MessageSettings.read(tag.getCompound("message")));}catch(IllegalArgumentException ignored){}
         if(tag.contains("plot"))try{plot=PlotSettings.read(tag.getCompound("plot"));}catch(IllegalArgumentException ignored){plot=PlotSettings.DEFAULT;}
@@ -99,7 +107,7 @@ public final class RadioBlockEntity extends BlockEntity {
         if (tag.contains("radio")) {
             try { var next=RadioSettings.read(tag.getCompound("radio"));
                 if(kind().equals("bit_generator")&&(!next.transmit()||!next.signalMode().equals("bits")))throw new IllegalArgumentException("generator_mode");
-                if(kind().equals("message_source")&&!next.transmit()||kind().equals("message_receiver")&&next.transmit())throw new IllegalArgumentException("data_role");
+                if(kind().equals("message_source")&&!next.transmit()||(kind().equals("message_receiver")||kind().equals("packet_receiver"))&&next.transmit())throw new IllegalArgumentException("data_role");
                 settings=next;
             }
             catch (IllegalArgumentException ignored) { /* Keep valid constructor defaults. */ }

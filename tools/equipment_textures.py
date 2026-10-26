@@ -22,7 +22,7 @@ for y in range(7,27,4):d.line((8,y,24,y),fill='#17232d');d.line((8,y+1,24,y+1),f
 save(im,'instrument_vents')
 for name,base in [('socket_dark',(30,40,48)),('socket_a',(183,104,47)),('socket_b',(53,122,177)),('socket_out',(65,156,98))]:
  im=panel(base);d=ImageDraw.Draw(im);d.rectangle((8,8,23,23),outline='#17232d',width=2);d.rectangle((11,11,20,20),outline='#b8c9cf');d.rectangle((14,14,17,17),fill='#17232d');save(im,name)
-units={'message_source':('TXT','#7be0ba'),'message_codec':('ZIP','#e8cc78'),'channel_coder':('FEC','#c39ae9'),'message_receiver':('RXD','#83c8ea'),'gray_converter':('GRAY','#8be2ce'),'transmitter':('TX','#64dfab'),'bit_generator':('BIT','#ef8c72'),'amplifier':('AMP','#f0af59'),'frequency_filter':('FLT','#75cfea'),'modulator':('MOD','#c29af3'),'adder':('SUM','#edcf64'),'integrator':('INT','#eea4ca'),'correlator':('COR','#8ddca2'),'time_gate':('GATE','#e98887'),'delay_line':('DLY','#91a9eb')}
+units={'digital_modem':('IQ','#9ae3ed'),'packet_sender':('FRM','#edbb7b'),'packet_receiver':('ARQ','#92dbab'),'orthogonality_meter':('ORTH','#dbb0e8'),'simulator':('SIM','#a0d8c0'),'message_source':('TXT','#7be0ba'),'message_codec':('ZIP','#e8cc78'),'channel_coder':('FEC','#c39ae9'),'message_receiver':('RXD','#83c8ea'),'gray_converter':('GRAY','#8be2ce'),'transmitter':('TX','#64dfab'),'bit_generator':('BIT','#ef8c72'),'amplifier':('AMP','#f0af59'),'frequency_filter':('FLT','#75cfea'),'modulator':('MOD','#c29af3'),'adder':('SUM','#edcf64'),'integrator':('INT','#eea4ca'),'correlator':('COR','#8ddca2'),'time_gate':('GATE','#e98887'),'delay_line':('DLY','#91a9eb')}
 for name,(label,accent) in units.items():
  im=panel((32,44,54));d=ImageDraw.Draw(im);d.rectangle((5,5,26,23),fill='#101f29',outline='#607d8a');d.line((6,15,25,15),fill='#28404c');d.line((15,6,15,22),fill='#28404c')
  points=[]
@@ -79,11 +79,11 @@ for path in (root/'models/block').glob('*.json'):
   for element in model.get('elements',[]):
    for face in element.get('faces',{}).values():
     if face['texture']=='#accent':face['uv']=[0,0,16,16]
-  if name in ['adder','correlator']:
+  if name in ['adder','correlator','orthogonality_meter']:
    for element in model['elements']:
     if element['from'][0]==0 and element['to'][0]==1:
      for face in element['faces'].values():face['texture']='#socket_b'
- if name in units and name not in ['transmitter','bit_generator','message_source','message_receiver']:
+ if name in units and name not in ['transmitter','bit_generator','message_source','message_receiver','packet_receiver','simulator']:
   if not any(e['from']==[6,0,0] and e['to']==[10,2,1] for e in model['elements']):
    model['elements'].append({'from':[6,0,0],'to':[10,2,1],'faces':{f:{'texture':'#output','uv':[0,0,16,16]} for f in ['north','south','east','west','up','down']}})
  path.write_text(json.dumps(model,indent=2)+'\n')

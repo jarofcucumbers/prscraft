@@ -39,7 +39,7 @@ public final class PresetMenu extends AbstractContainerMenu {
         var template=radio.media.getStackInSlot(0);var card=radio.media.getStackInSlot(1);
         if(action==0 && (template.is(Items.PAPER)||template.is(PRSCraft.TEMPLATE.get()))) {
             var tag=new net.minecraft.nbt.CompoundTag();tag.putString("kind",radio.kind());tag.put("settings",radio.settings().save());
-            tag.put("plot",radio.plot().save());tag.put("message",radio.message().save());tag.put("gray",radio.gray().save());tag.put("processor",radio.processor().save());tag.put("dsp",radio.dsp().save());tag.putBoolean("correlationView",radio.correlationView());tag.putInt("graphLayers",radio.graphLayers());tag.putInt("graphTerms",radio.graphTerms());
+            tag.put("orthogonality",radio.orthogonality().save());tag.put("protocol",radio.protocol().save());tag.put("plot",radio.plot().save());tag.put("message",radio.message().save());tag.put("gray",radio.gray().save());tag.put("processor",radio.processor().save());tag.put("dsp",radio.dsp().save());tag.putBoolean("correlationView",radio.correlationView());tag.putInt("graphLayers",radio.graphLayers());tag.putInt("graphTerms",radio.graphTerms());
             var result=new ItemStack(PRSCraft.TEMPLATE.get());result.set(DataComponents.CUSTOM_DATA,CustomData.of(tag));
             result.set(DataComponents.CUSTOM_NAME,Component.literal(radio.kind().equals("gray_converter")?"GRAY · "+radio.gray().mode()+" · "+radio.gray().wordBits()+" bit":TemplateItem.summary(radio.kind(),radio.settings(),radio.processor(),radio.dsp())));
             result.set(DataComponents.CUSTOM_MODEL_DATA,new net.minecraft.world.item.component.CustomModelData(TemplateItem.model(radio.kind(),radio.settings())));

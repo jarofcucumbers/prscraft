@@ -22,6 +22,8 @@
     "information",
     "data_limits",
     "plot_axes",
+    "orthogonal_theory",
+    "channel_environment",
     "limits"
   ],
   "lessons": [
@@ -109,6 +111,23 @@
       "formulas": [
         "time [s]: Xmin … Xmax",
         "amplitude [u]: Ymin … Ymax"
+      ]
+    },
+    {
+      "id": "orthogonal_theory",
+      "diagram": "orthogonal",
+      "formulas": [
+        "∫[0,T] sin(2πft)cos(2πft)dt = 0 (T=m/f)",
+        "QPSK: two orthogonal I/Q basis functions"
+      ]
+    },
+    {
+      "id": "channel_environment",
+      "diagram": "environment",
+      "formulas": [
+        "τ = Σ dispersionPerMetre × L [s]",
+        "y[n]=y[n−1]+(1−exp(−dt/τ))(x[n]−y[n−1])",
+        "Lenv = 0.05·L·c·exposure [dB]"
       ]
     }
   ],
@@ -465,6 +484,84 @@
       "formulas": [
         "A = 0; B = 10; SPACE = 11",
         "ABBA → 0|10|10|0 = 010100"
+      ]
+    },
+    {
+      "id": "digital_modem",
+      "items": [
+        "digital_modem"
+      ],
+      "diagram": "iq",
+      "formulas": [
+        "QPSK: k=2; I,Q = ±1/√2",
+        "16-QAM: k=4; I,Q ∈ {−3,−1,+1,+3}/√10",
+        "Rs=Rb/k; mean Es=1 (uniform symbols)"
+      ]
+    },
+    {
+      "id": "packet_sender",
+      "items": [
+        "packet_sender"
+      ],
+      "diagram": "packets",
+      "formulas": [
+        "slot = 9-byte header + P bytes + 4-byte CRC32",
+        "Nframes=max(1,ceil(Nbytes/P)); 16 ≤ P ≤ 128"
+      ]
+    },
+    {
+      "id": "packet_receiver",
+      "items": [
+        "packet_receiver"
+      ],
+      "diagram": "packets",
+      "formulas": [
+        "CRC → accept by sequence → ACK / retry",
+        "goodput = delivered payload bits / modeled time"
+      ]
+    },
+    {
+      "id": "orthogonality_meter",
+      "items": [
+        "orthogonality_meter"
+      ],
+      "diagram": "orthogonal",
+      "formulas": [
+        "<A,B> = ∫[t0,t1] A(t)B(t) dt",
+        "ρ=<A,B>/sqrt(EA·EB); orthogonal if |ρ|≤ε",
+        "discrete: <a,b>=Σ a[n]b[n]"
+      ]
+    },
+    {
+      "id": "simulator",
+      "items": [
+        "simulator"
+      ],
+      "diagram": "simulator",
+      "formulas": [
+        "physical engine = virtual engine",
+        "≤32 nodes; ≤64 links; document ≤512 KiB"
+      ]
+    },
+    {
+      "id": "doctoral_coat",
+      "items": [
+        "doctoral_coat"
+      ],
+      "diagram": "coat",
+      "formulas": [
+        "chest slot + looking at device → read-only HUD"
+      ]
+    },
+    {
+      "id": "research_notebook",
+      "items": [
+        "research_notebook"
+      ],
+      "diagram": "notebook",
+      "formulas": [
+        "experiment = title + notes + template + frozen capture",
+        "≤8 experiments; title ≤64; notes ≤2048 characters"
       ]
     }
   ],
@@ -2603,6 +2700,480 @@
           "to": 1,
           "label": "OUT → A",
           "from": 0
+        }
+      ]
+    },
+    {
+      "id": "qpsk_link",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "HELLO; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:digital_modem",
+          "parameters": [
+            "qpsk_encode",
+            "Rb=1000; μ=σ²=0"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:digital_modem",
+          "parameters": [
+            "qpsk_decode",
+            "Rb=1000; μ=σ²=0"
+          ],
+          "x": 498,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_receiver",
+          "parameters": [
+            "raw; Rb=1000",
+            "RF=100 MHz; threshold=0",
+            "thermal=OFF; μ=σ²=0"
+          ],
+          "x": 24,
+          "y": 385
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "qam16_link",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "HELLO; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:digital_modem",
+          "parameters": [
+            "qam16_encode",
+            "Rb=1000; μ=σ²=0"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:digital_modem",
+          "parameters": [
+            "qam16_decode",
+            "Rb=1000; μ=σ²=0"
+          ],
+          "x": 498,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_receiver",
+          "parameters": [
+            "raw; Rb=1000",
+            "RF=100 MHz; threshold=0",
+            "thermal=OFF; μ=σ²=0"
+          ],
+          "x": 24,
+          "y": 385
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        },
+        {
+          "from": 2,
+          "to": 3,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "packets_verified",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "HELLO; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:packet_sender",
+          "parameters": [
+            "payload=32 B",
+            "retries=3; timeout=.05 s",
+            "Rb=1000"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:packet_receiver",
+          "parameters": [
+            "payload=32 B; Rb=1000",
+            "ACK loss=0",
+            "thermal=OFF; μ=σ²=0"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "arq_recovery",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "HELLO; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:packet_sender",
+          "parameters": [
+            "payload=32; retries=8",
+            "Rb=1000"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:packet_receiver",
+          "parameters": [
+            "payload=32; ACK loss=.5",
+            "Rb=1000; noise=OFF"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "ack_ambiguity",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "HELLO; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:packet_sender",
+          "parameters": [
+            "payload=32 B",
+            "retries=3; timeout=.05 s",
+            "Rb=1000"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:packet_receiver",
+          "parameters": [
+            "ACK loss=1",
+            "payload=32; Rb=1000"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "orthogonal_pair",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX analog; sin(10)",
+            "RF=100 MHz; noise=OFF"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX analog; cos(10)",
+            "RF=100 MHz; noise=OFF"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:orthogonality_meter",
+          "parameters": [
+            "start=0; end=1",
+            "ε=.01; continuous"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 2,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → B"
+        }
+      ]
+    },
+    {
+      "id": "nonorthogonal_pair",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX analog; sin(10)",
+            "RF=100 MHz; noise=OFF"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX analog; cos(10)",
+            "RF=100 MHz; noise=OFF"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:orthogonality_meter",
+          "parameters": [
+            "start=0; end=.025",
+            "ε=.01; continuous"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 2,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → B"
+        }
+      ]
+    },
+    {
+      "id": "simulator_lab",
+      "nodes": [
+        {
+          "item": "prscraft:simulator",
+          "parameters": [
+            "TX → virtual link → RX",
+            "Properties: same device UI"
+          ],
+          "x": 24,
+          "y": 225
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "lab_coat",
+      "nodes": [
+        {
+          "item": "prscraft:doctoral_coat",
+          "parameters": [
+            "CHEST slot",
+            "look at instrument"
+          ],
+          "x": 24,
+          "y": 225
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "protocol_entry",
+      "nodes": [
+        {
+          "item": "prscraft:research_notebook",
+          "parameters": [
+            "capture working RX",
+            "title + notes + template"
+          ],
+          "x": 24,
+          "y": 225
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "weather_lab",
+      "nodes": [
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "TX sin(10)"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:metallic_cable",
+          "parameters": [
+            "environment=ON",
+            "adjacent water"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX; RF=100 MHz"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "dispersive_link",
+      "nodes": [
+        {
+          "item": "prscraft:bit_generator",
+          "parameters": [
+            "fixed bits; Rb=100"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:coaxial_cable",
+          "parameters": [
+            "L=1 m; τ/L=.002 s/m"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:transmitter",
+          "parameters": [
+            "RX"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "from": 0,
+          "to": 1,
+          "label": "OUT → A"
+        },
+        {
+          "from": 1,
+          "to": 2,
+          "label": "OUT → A"
         }
       ]
     }

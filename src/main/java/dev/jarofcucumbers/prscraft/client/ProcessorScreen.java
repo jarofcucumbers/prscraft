@@ -11,17 +11,17 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 public final class ProcessorScreen extends Screen {
     private static final int W=480,H=360;
-    private final BlockPos pos;private final String kind;
+    private final BlockPos pos;private final String kind;private final boolean recorded;
     private CompoundTag snapshot;private RadioSettings radio;private ProcessorSettings saved;
     private EditBox gain,low,high,oscillator,symbol,depth;
     private boolean enabled;private String modulation;private String error="";private int ticks;
     private float scale;private int ox,oy;
     public ProcessorScreen(BlockPos pos,CompoundTag data){
-        super(Component.translatable("block.prscraft."+data.getString("kind")));this.pos=pos;kind=data.getString("kind");
+        super(Component.translatable("block.prscraft."+(data.getBoolean("recorded")?data.getString("captureKind"):data.getString("kind"))));this.pos=pos;recorded=data.getBoolean("recorded")||data.getBoolean("analysis");kind=data.getBoolean("recorded")?data.getString("captureKind"):data.getString("kind");
         snapshot=data;radio=RadioSettings.read(data.getCompound("settings"));saved=ProcessorSettings.read(data.getCompound("processor"));enabled=radio.enabled();modulation=saved.modulation();
     }
     public BlockPos pos(){return pos;}
-    public void receive(CompoundTag data){snapshot=data;radio=RadioSettings.read(data.getCompound("settings"));saved=ProcessorSettings.read(data.getCompound("processor"));error=data.getString("error");}
+    public void receive(CompoundTag data){if(recorded)return;snapshot=data;radio=RadioSettings.read(data.getCompound("settings"));saved=ProcessorSettings.read(data.getCompound("processor"));error=data.getString("error");}
     private Component tr(String key){return Component.translatable("screen.prscraft."+key);}
     private EditBox field(int x,int y,int width,double value,EditBox previous,String key){
         var box=new EditBox(font,x,y,width,20,tr(key));box.setMaxLength(16);box.setValue(previous==null?Double.toString(value):previous.getValue());return addRenderableWidget(box);
@@ -37,18 +37,20 @@ public final class ProcessorScreen extends Screen {
         gain.visible=kind.equals("amplifier");low.visible=high.visible=kind.equals("frequency_filter");oscillator.visible=symbol.visible=depth.visible=kind.equals("modulator");
         button(16,100,130,Component.literal(enabled?"ON":"OFF"),b->{enabled=!enabled;b.setMessage(Component.literal(enabled?"ON":"OFF"));});
         if(kind.equals("modulator"))button(160,100,130,Component.literal(modulation.toUpperCase()),b->{modulation=modulation.equals("bpsk")?"am":"bpsk";b.setMessage(Component.literal(modulation.toUpperCase()));});
-        button(16,137,210,tr("apply"),b->save());button(240,137,214,tr("media"),b->{var tag=new CompoundTag();tag.putString("action","media");PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,tag));});
+        button(16,137,210,tr("apply"),b->save());button(240,137,214,tr("media"),b->{var tag=new CompoundTag();tag.putString("action","media");RadioClient.request(new RadioNetwork.Request(pos,false,tag));});
+        if(recorded)for(var widget:renderables)if(widget instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.getY()>28&&w.getY()<170)w.active=false;
     }
     private static double number(EditBox box){return Double.parseDouble(box.getValue().replace(',','.'));}
-    private void save(){try{
+    private void save(){if(recorded)return;try{
         var next=new ProcessorSettings(gain.visible?number(gain):saved.gainDb(),low.visible?number(low):saved.lowHz(),high.visible?number(high):saved.highHz(),modulation,
             oscillator.visible?number(oscillator):saved.oscillatorHz(),symbol.visible?number(symbol):saved.symbolHz(),depth.visible?number(depth):saved.depth(),saved.demodulate());
         var data=radio.save();data.putBoolean("enabled",enabled);RadioSettings.read(data);
-        data.put("processor",next.save());error="";PacketDistributor.sendToServer(new RadioNetwork.Request(pos,true,data));
+        data.put("processor",next.save());error="";RadioClient.request(new RadioNetwork.Request(pos,true,data));
     }catch(NumberFormatException e){error="number";}catch(IllegalArgumentException e){error=e.getMessage();}}
     @Override public void tick(){
-        if(minecraft.player==null||minecraft.level==null||minecraft.player.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>64||!(minecraft.level.getBlockState(pos).getBlock() instanceof ProcessorBlock)){onClose();return;}
-        if(++ticks%20==0)PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,new CompoundTag()));
+        if(recorded)return;
+        if(minecraft.player==null||minecraft.level==null||!RadioClient.inRange(pos)||(SimulationClient.root==null&&!(minecraft.level.getBlockState(pos).getBlock() instanceof ProcessorBlock))){onClose();return;}
+        if(++ticks%20==0)RadioClient.request(new RadioNetwork.Request(pos,false,new CompoundTag()));
     }
     @Override public void renderBackground(GuiGraphics g,int x,int y,float partial){}
     @Override public void render(GuiGraphics g,int mx,int my,float partial){
@@ -73,5 +75,6 @@ public final class ProcessorScreen extends Screen {
     @Override public boolean mouseClicked(double x,double y,int button){return super.mouseClicked((x-ox)/scale,(y-oy)/scale,button);}
     @Override public boolean mouseReleased(double x,double y,int button){return super.mouseReleased((x-ox)/scale,(y-oy)/scale,button);}
     @Override public boolean mouseDragged(double x,double y,int button,double dx,double dy){return super.mouseDragged((x-ox)/scale,(y-oy)/scale,button,dx/scale,dy/scale);}
+    @Override public void onClose(){RadioClient.closeDevice(null);}
     @Override public boolean isPauseScreen(){return false;}
 }

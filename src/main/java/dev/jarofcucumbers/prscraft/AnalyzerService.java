@@ -12,7 +12,7 @@ public final class AnalyzerService{
         if(device.isSource())return device.settings().transmit()?"TX":"RX";
         Direction front=device.getBlockState().getValue(TransmitterBlock.FACING);
         if(side==front)return "OUT";if(side==front.getOpposite())return "A";
-        if((device.kind().equals("adder")||device.kind().equals("correlator"))&&side==front.getCounterClockWise())return "B";
+        if((device.kind().equals("adder")||device.kind().equals("correlator")||device.kind().equals("orthogonality_meter"))&&side==front.getCounterClockWise())return "B";
         return "unused";
     }
     private static SignalBudget.Medium medium(Level level,BlockPos pos){var b=level.getBlockState(pos).getBlock();return b instanceof CableBlock cable?cable.medium:b instanceof PortBlock port?port.medium:null;}

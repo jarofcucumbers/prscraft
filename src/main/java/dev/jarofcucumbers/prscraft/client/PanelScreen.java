@@ -12,6 +12,7 @@ public abstract class PanelScreen extends Screen {
     protected static double number(EditBox box){return Double.parseDouble(box.getValue().replace(',','.'));}
     protected static String fmt(double value){return String.format(java.util.Locale.ROOT,"%.5g",value);}
     @Override protected final void init(){scale=Math.min((width-8f)/panelWidth,(height-8f)/panelHeight);ox=(int)((width-panelWidth*scale)/2);oy=(int)((height-panelHeight*scale)/2);build();}
+    protected double localX(double x){return (x-ox)/scale;}protected double localY(double y){return (y-oy)/scale;}
     protected abstract void build();protected abstract void draw(GuiGraphics g);
     @Override public void renderBackground(GuiGraphics g,int x,int y,float p){}
     @Override public final void render(GuiGraphics g,int x,int y,float partial){g.fill(0,0,width,height,0xc0101520);g.pose().pushPose();g.pose().translate(ox,oy,0);g.pose().scale(scale,scale,1);

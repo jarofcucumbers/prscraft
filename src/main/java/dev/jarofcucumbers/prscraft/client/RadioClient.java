@@ -6,16 +6,30 @@ import net.minecraft.client.Minecraft;
 /** Only resolved by the clientbound packet handler on the physical client. */
 public final class RadioClient {
     private RadioClient() {}
+    public static boolean inRange(net.minecraft.core.BlockPos pos){var mc=Minecraft.getInstance();var target=SimulationClient.root==null?pos:SimulationClient.root;return mc.player!=null&&mc.player.distanceToSqr(target.getX()+.5,target.getY()+.5,target.getZ()+.5)<=64;}
+    public static void request(RadioNetwork.Request request){if(SimulationClient.root!=null){var t=new net.minecraft.nbt.CompoundTag();t.putBoolean("save",request.save());t.put("request",request.data());SimulationClient.send("device",t);}else net.neoforged.neoforge.network.PacketDistributor.sendToServer(request);}
+    public static void codebook(dev.jarofcucumbers.prscraft.CodebookNetwork.Edit edit){if(SimulationClient.root!=null){var t=new net.minecraft.nbt.CompoundTag();t.putString("mapping",edit.mapping());SimulationClient.send("codebook_edit",t);}else net.neoforged.neoforge.network.PacketDistributor.sendToServer(edit);}
+    public static void closeDevice(net.minecraft.client.gui.screens.Screen parent){if(parent!=null)Minecraft.getInstance().setScreen(parent);else if(SimulationClient.root!=null)SimulationClient.back();else Minecraft.getInstance().setScreen(null);}
     public static void openHandbook(){Minecraft.getInstance().setScreen(new HandbookScreen(null));}
     public static void receive(RadioNetwork.Snapshot packet) {
         Minecraft minecraft = Minecraft.getInstance();
+        String special=packet.data().getString("kind");
+        if(special.equals("research_notebook")){if(packet.open())minecraft.setScreen(new NotebookScreen(packet.data()));else if(minecraft.screen instanceof NotebookScreen notebook)notebook.receive(packet.data());return;}
+        if(special.equals("coat_hud")){CoatHud.receive(packet.pos(),packet.data());return;}
+        if(special.equals("simulator")){SimulationClient.graph(packet.pos(),packet.data(),packet.open());return;}
+        if(packet.data().getBoolean("simulated"))SimulationClient.context(packet.data());
+        else if(packet.open()&&!packet.data().getBoolean("recorded"))SimulationClient.clear();
+        if(special.equals("sim_media")){minecraft.setScreen(new SimulatorMediaScreen(packet.data()));return;}
+        if(special.equals("sim_board")){if(packet.open())minecraft.setScreen(new SimulatorBoardScreen(packet.data()));else if(minecraft.screen instanceof SimulatorBoardScreen board)board.receive(packet.data());return;}
         if(!packet.open()&&packet.data().getString("kind").equals("codebook_editor")){if(minecraft.screen instanceof CodebookScreen editor&&editor.pos().equals(packet.pos()))editor.receive(packet.data());return;}
         if (packet.open()) {
             String kind=packet.data().getString("kind");
             String displayKind=packet.data().getBoolean("recorded")?packet.data().getString("captureKind"):kind;
             boolean dsp=java.util.Set.of("adder","integrator","correlator","time_gate","delay_line").contains(displayKind);
-            minecraft.setScreen(kind.equals("codebook_editor")?new CodebookScreen(packet.pos(),packet.data()):java.util.Set.of("message_source","message_codec","channel_coder","message_receiver").contains(displayKind)||displayKind.equals("radio")&&packet.data().getBoolean("dataStream")?new MessageScreen(packet.pos(),packet.data()):displayKind.equals("gray_converter")?new GrayScreen(packet.pos(),packet.data()):kind.equals("drawing_board")?new BoardScreen(packet.pos(),packet.data()):dsp?new DspScreen(packet.pos(),packet.data()):kind.equals("cable")?new CableScreen(packet.pos(),packet.data()):kind.equals("analyzer")?new AnalyzerScreen(packet.pos(),packet.data()):kind.equals("radio")||kind.equals("bit_generator")?new RadioScreen(packet.pos(),packet.data()):new ProcessorScreen(packet.pos(),packet.data()));
+            minecraft.setScreen(kind.equals("codebook_editor")?new CodebookScreen(packet.pos(),packet.data()):java.util.Set.of("message_source","message_codec","channel_coder","message_receiver","digital_modem","packet_sender","packet_receiver").contains(displayKind)||displayKind.equals("radio")&&packet.data().getBoolean("dataStream")?new MessageScreen(packet.pos(),packet.data()):displayKind.equals("orthogonality_meter")?new OrthogonalityScreen(packet.pos(),packet.data()):displayKind.equals("gray_converter")?new GrayScreen(packet.pos(),packet.data()):kind.equals("drawing_board")?new BoardScreen(packet.pos(),packet.data()):dsp?new DspScreen(packet.pos(),packet.data()):kind.equals("cable")?new CableScreen(packet.pos(),packet.data()):kind.equals("analyzer")?new AnalyzerScreen(packet.pos(),packet.data()):displayKind.equals("radio")||displayKind.equals("bit_generator")?new RadioScreen(packet.pos(),packet.data()):new ProcessorScreen(packet.pos(),packet.data()));
         }
+        else if(minecraft.screen instanceof OrthogonalityScreen meter&&meter.pos().equals(packet.pos()))meter.receive(packet.data());
+        else if(minecraft.screen instanceof ProtocolScreen protocol&&protocol.pos().equals(packet.pos()))protocol.receive(packet.data());
         else if(minecraft.screen instanceof PlotScreen plot&&plot.pos().equals(packet.pos()))plot.receive(packet.data());
         else if(minecraft.screen instanceof MessageScreen message&&message.pos().equals(packet.pos()))message.receive(packet.data());
         else if(minecraft.screen instanceof CircuitMapScreen map&&map.pos().equals(packet.pos())&&packet.data().getString("kind").equals("analyzer"))map.receive(packet.data());

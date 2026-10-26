@@ -96,6 +96,30 @@
         "prscraft:profile": 16
       },
       "model": "prscraft:item/template_16"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 17
+      },
+      "model": "prscraft:item/template_17"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 18
+      },
+      "model": "prscraft:item/template_18"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 19
+      },
+      "model": "prscraft:item/template_19"
+    },
+    {
+      "predicate": {
+        "prscraft:profile": 20
+      },
+      "model": "prscraft:item/template_20"
     }
   ]
 }
