@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "prscraft:block/channel_coder",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "prscraft:block/channel_coder",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "prscraft:block/channel_coder",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "prscraft:block/channel_coder",
+      "y": 270
+    }
+  }
+}

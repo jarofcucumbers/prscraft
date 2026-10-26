@@ -14,6 +14,7 @@ public final class TemplateItem extends Item {
                 if(signal.length()>22)signal=signal.substring(0,22)+"…";
                 yield s.transmit()?"TX · "+signal+" · "+s.carrierMHz()+" MHz":"RX · "+s.carrierMHz()+" MHz";
             }
+            case "message_source" -> "TXT · UTF-8";case "message_codec" -> "ZIP · RLE/Huffman";case "channel_coder" -> "FEC · CRC/Hamming";case "message_receiver" -> "RX · data";
             case "gray_converter" -> "GRAY · Binary ↔ Gray";
             case "bit_generator" -> "BITS · P1="+s.lab().probabilityOne()+" · "+s.bitRate()+" bit/s";
             case "amplifier" -> "AMP · "+p.gainDb()+" dB";
@@ -30,13 +31,14 @@ public final class TemplateItem extends Item {
         case "delay_line" -> "DELAY · "+dsp.delaySeconds()+" s";
         default -> summary(kind,s,p);
     };}
-    public static int model(String kind,RadioSettings s){return switch(kind){case "radio"->s.transmit()?1:2;case "amplifier"->3;case "frequency_filter"->4;case "modulator"->5;case "bit_generator"->6;case "adder"->7;case "integrator"->8;case "correlator"->9;case "time_gate"->10;case "delay_line"->11;case "gray_converter"->12;default->0;};}
+    public static int model(String kind,RadioSettings s){return switch(kind){case "radio"->s.transmit()?1:2;case "amplifier"->3;case "frequency_filter"->4;case "modulator"->5;case "bit_generator"->6;case "adder"->7;case "integrator"->8;case "correlator"->9;case "time_gate"->10;case "delay_line"->11;case "gray_converter"->12;case "message_source"->13;case "message_codec"->14;case "channel_coder"->15;case "message_receiver"->16;default->0;};}
     @Override public void appendHoverText(ItemStack stack,TooltipContext context,List<Component> lines,TooltipFlag flags){
         CustomData data=stack.get(DataComponents.CUSTOM_DATA);if(data==null){lines.add(Component.translatable("tooltip.prscraft.blank_template").withStyle(ChatFormatting.GRAY));return;}
         try{var tag=data.copyTag();var s=RadioSettings.read(tag.getCompound("settings"));var p=ProcessorSettings.read(tag.getCompound("processor"));
             lines.add(Component.literal(summary(tag.getString("kind"),s,p,tag.contains("dsp")?DspSettings.read(tag.getCompound("dsp")):DspSettings.DEFAULT)).withStyle(ChatFormatting.AQUA));
             String kind=tag.getString("kind");
             if(kind.equals("gray_converter")&&tag.contains("gray")){var gray=GraySettings.read(tag.getCompound("gray"));lines.add(Component.literal(gray.mode()+" · "+gray.wordBits()+" bit · "+(gray.levelInput()?gray.sampleHz()+" Hz · L="+gray.levels():gray.bitRate()+" bit/s")).withStyle(ChatFormatting.GRAY));}
+            if(tag.contains("message")&&java.util.Set.of("message_source","message_codec","channel_coder","message_receiver").contains(kind)){var m=MessageSettings.read(tag.getCompound("message"));lines.add(Component.literal(m.operation()+" · "+m.bitRate()+" bit/s · threshold="+m.threshold()).withStyle(ChatFormatting.GRAY));}
             boolean source=kind.equals("radio")&&s.transmit()||kind.equals("bit_generator");
             if(source){
                 lines.add(Component.literal(s.signalMode().equals("bits")?(s.lab().randomBits()?"Bernoulli seed="+s.lab().seed():s.bits()):s.signalMode().equals("discrete")?s.lab().samples():s.expression()).withStyle(ChatFormatting.GRAY));

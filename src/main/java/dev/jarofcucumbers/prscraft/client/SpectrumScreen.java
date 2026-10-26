@@ -11,7 +11,7 @@ public final class SpectrumScreen extends PanelScreen {
     public SpectrumScreen(Screen parent,CompoundTag snapshot){super(Component.translatable("screen.prscraft.spectrum"),720,440);this.parent=parent;this.snapshot=snapshot;stage=snapshot.getBoolean("connected")?2:0;}
     @Override protected void build(){button(14,39,210,tr("spectrum_psd"),b->{measure=(measure+1)%3;b.setMessage(tr(measure==0?"spectrum_psd":measure==1?"spectrum_esd":"spectrum_amplitude"));});
         button(238,39,210,Component.literal(STAGES[stage]),b->{stage=(stage+1)%3;b.setMessage(Component.literal(STAGES[stage]));});
-        button(462,39,244,Component.literal("dB / linear"),b->logarithmic=!logarithmic);button(14,405,150,tr("back"),b->onClose());exportButton=button(176,405,190,Component.literal("CSV · spectrum"),b->RadioClient.exportSpectrum(snapshot,STAGES[stage]));}
+        button(462,39,244,Component.literal("dB / linear"),b->logarithmic=!logarithmic);button(382,405,170,tr("oscilloscope"),b->minecraft.setScreen(new PlotScreen(this,snapshot)));button(14,405,150,tr("back"),b->onClose());exportButton=button(176,405,190,Component.literal("CSV · spectrum"),b->RadioClient.exportSpectrum(snapshot,STAGES[stage]));}
     @Override public void onClose(){minecraft.setScreen(parent);}
     @Override protected void draw(GuiGraphics g){
         exportButton.active=snapshot.getIntArray(STAGES[stage]).length==512&&(stage==0||!snapshot.contains("units")||snapshot.getString("units").equals("u"));

@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:message_link",
+  "display": {
+    "icon": {
+      "id": "prscraft:message_receiver"
+    },
+    "title": {
+      "translate": "advancements.prscraft.utf8_message.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.utf8_message.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

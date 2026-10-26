@@ -18,6 +18,7 @@ public final class GrayScreen extends PanelScreen{
         button(308,42,90,Component.literal(enabled?"ON":"OFF"),b->{enabled=!enabled;b.setMessage(Component.literal(enabled?"ON":"OFF"));});button(412,42,132,tr("apply"),b->save());button(558,42,148,tr("media"),b->{var t=new CompoundTag();t.putString("action","media");PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,t));});
         width=input(14,96,saved.wordBits(),width,"gray_width");rate=input(190,96,saved.bitRate(),rate,"bit_rate");threshold=input(366,96,saved.threshold(),threshold,"gray_threshold");low=input(14,142,saved.low(),low,"gray_low");high=input(190,142,saved.high(),high,"gray_high");
         levels=input(366,96,saved.levels(),levels,"levels");sample=input(542,96,saved.sampleHz(),sample,"sample");minimum=input(366,142,saved.minimum(),minimum,"gray_min");maximum=input(542,142,saved.maximum(),maximum,"gray_max");visibility();
+        button(350,4,110,tr("oscilloscope"),b->minecraft.setScreen(new PlotScreen(this,data)));
         button(468,4,110,tr("spectrum"),b->minecraft.setScreen(new SpectrumScreen(this,data)));button(586,4,120,tr("book"),b->minecraft.setScreen(new HandbookScreen(this)));
         if(recorded)for(var r:renderables)if(r instanceof net.minecraft.client.gui.components.AbstractWidget w&&w.getY()>28)w.active=false;
     }

@@ -29,6 +29,7 @@ public final class ProcessorScreen extends Screen {
     private void button(int x,int y,int width,Component label,Button.OnPress press){addRenderableWidget(new ScaledButton(x,y,width,label,press));}
     @Override protected void init(){
         scale=Math.min((width-8f)/W,(height-8f)/H);ox=(int)((width-W*scale)/2);oy=(int)((height-H*scale)/2);
+        button(150,4,76,tr("oscilloscope"),b->minecraft.setScreen(new PlotScreen(this,snapshot)));
         button(234,4,110,tr("spectrum"),b->minecraft.setScreen(new SpectrumScreen(this,snapshot)));
         button(352,4,110,tr("book"),b->minecraft.setScreen(new HandbookScreen(this)));
         gain=field(16,56,130,saved.gainDb(),gain,"gain");low=field(16,56,130,saved.lowHz(),low,"low");high=field(160,56,130,saved.highHz(),high,"high");

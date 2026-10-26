@@ -11,10 +11,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import java.util.*;
 public final class BoardScreen extends PanelScreen{
     private final BlockPos pos;private byte[] pixels;private int brush=1,ticks,textScale=1;private boolean offhand,dragging;private int lastX,lastY,startX,startY,hoverX=-1,hoverY=-1;
-    private BoardDrawing.Shape mode=BoardDrawing.Shape.FREEHAND;private EditBox text;private int[] preview=new int[0];
+    private BoardDrawing.Shape mode=BoardDrawing.Shape.FREEHAND;private EditBox text;private net.minecraft.client.gui.components.Button clearButton;private String serverError="";private int[] preview=new int[0];
     private final LinkedHashSet<Integer> pending=new LinkedHashSet<>();private static final int X=16,Y=48,ZOOM=3;
     public BoardScreen(BlockPos pos,CompoundTag data){super(Component.translatable("block.prscraft.drawing_board"),610,454);this.pos=pos;pixels=BoardPixels.read(data.getByteArray("pixels"));var p=net.minecraft.client.Minecraft.getInstance().player;offhand=p!=null&&!BoardTools.isTool(p.getMainHandItem())&&BoardTools.isTool(p.getOffhandItem());}
-    public BlockPos pos(){return pos;}public void receive(CompoundTag data){pixels=BoardPixels.read(data.getByteArray("pixels"));int color=color();for(int p:pending)pixels[p]=(byte)color;}
+    public BlockPos pos(){return pos;}public void receive(CompoundTag data){serverError=data.getString("error");pixels=BoardPixels.read(data.getByteArray("pixels"));int color=color();for(int p:pending)pixels[p]=(byte)color;}
     private String modeKey(){return "board_mode_"+mode.name().toLowerCase(java.util.Locale.ROOT);}
     @Override protected void build(){
         button(418,48,174,tr("brush_size").copy().append(": "+brush),b->{int[] sizes={1,2,4,8,16};brush=sizes[(java.util.Arrays.binarySearch(sizes,brush)+1)%sizes.length];b.setMessage(tr("brush_size").copy().append(": "+brush));});
@@ -22,6 +22,7 @@ public final class BoardScreen extends PanelScreen{
         button(418,112,174,tr(modeKey()),b->{flush();cancelPreview();mode=BoardDrawing.Shape.values()[(mode.ordinal()+1)%BoardDrawing.Shape.values().length];b.setMessage(tr(modeKey()));text.visible=mode==BoardDrawing.Shape.TEXT;textSize.visible=text.visible;if(text.visible)setFocused(text);});
         text=field(418,174,174,text==null?"":text.getValue(),64,"board_text");text.visible=mode==BoardDrawing.Shape.TEXT;
         textSize=button(418,206,174,tr("board_text_size").copy().append(": "+textScale+"x"),b->{textScale=textScale%4+1;b.setMessage(tr("board_text_size").copy().append(": "+textScale+"x"));});textSize.visible=text.visible;
+        clearButton=button(418,174,174,tr("board_clear_all"),b->{flush();cancelPreview();PacketDistributor.sendToServer(new BoardNetwork.Clear(pos,offhand));});
         button(418,374,174,tr("book"),b->{flush();minecraft.setScreen(new HandbookScreen(this));});button(418,406,174,tr("back"),b->onClose());
     }
     private net.minecraft.client.gui.components.Button textSize;
@@ -33,10 +34,11 @@ public final class BoardScreen extends PanelScreen{
         for(int yy=0;yy<128;yy++)for(int xx=0;xx<128;){int start=xx,color=pixels[yy*128+xx];while(xx<128&&pixels[yy*128+xx]==color)xx++;g.fill(X+start*ZOOM,Y+yy*ZOOM,X+xx*ZOOM,Y+(yy+1)*ZOOM,BoardPixels.color(color));}
         if(mode==BoardDrawing.Shape.TEXT)preview=hoverX>=0&&usable()?BoardDrawing.text(text.getValue(),hoverX,hoverY,textScale):new int[0];
         if(usable())for(int p:preview){int x=p%128,y=p/128;g.fill(X+x*ZOOM,Y+y*ZOOM,X+(x+1)*ZOOM,Y+(y+1)*ZOOM,(BoardPixels.color(color())&0xffffff)|0x99000000);}
+        int clearCost=BoardTools.clearAllCost(pixels);clearButton.visible=tool().is(PRSCraft.ERASER.get())&&!text.visible;clearButton.active=clearCost>0&&BoardTools.remaining(tool())>=clearCost;clearButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("screen.prscraft.board_clear_cost",clearCost,BoardTools.remaining(tool()))));
         if(text.visible)label(g,"board_text",418,158);
         g.renderItem(tool(),420,242);g.drawString(font,Component.translatable("screen.prscraft.tool_left",BoardTools.remaining(tool())),444,246,0xffe4dfbf,false);
         String help=!BoardTools.isTool(tool())?"board_need_tool":!usable()?"board_empty":mode==BoardDrawing.Shape.FREEHAND?"board_help":mode==BoardDrawing.Shape.TEXT?"board_text_help":"board_shape_help";
-        g.drawWordWrap(font,tr(help),418,278,174,0xffc3d6e4);g.drawString(font,Component.translatable("screen.prscraft.preview_cost",preview.length),418,348,0xffa8d6b4,false);g.drawString(font,"128 × 128",16,438,0xffbdcabb,false);
+        g.drawWordWrap(font,tr(help),418,278,174,0xffc3d6e4);if(serverError.isEmpty())g.drawString(font,Component.translatable("screen.prscraft.preview_cost",preview.length),418,348,0xffa8d6b4,false);else g.drawWordWrap(font,Component.translatable("error.prscraft."+serverError),418,340,174,0xffffb582);g.drawString(font,"128 × 128",16,438,0xffbdcabb,false);
     }
     private boolean inside(double x,double y){return x>=X&&y>=Y&&x<X+384&&y<Y+384;}
     private void commit(int[] points){if(!usable())return;int color=color();for(int p:points){pending.add(p);pixels[p]=(byte)color;}}

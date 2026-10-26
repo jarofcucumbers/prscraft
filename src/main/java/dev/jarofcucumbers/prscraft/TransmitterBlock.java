@@ -33,7 +33,7 @@ public class TransmitterBlock extends HorizontalDirectionalBlock implements Enti
     }
     @Override protected void onRemove(BlockState state,Level level,BlockPos pos,BlockState next,boolean moving){
         if(!state.is(next.getBlock()) && level.getBlockEntity(pos) instanceof RadioBlockEntity radio){
-            for(int slot=0;slot<2;slot++)net.minecraft.world.Containers.dropItemStack(level,pos.getX(),pos.getY(),pos.getZ(),radio.media.getStackInSlot(slot));
+            for(int slot=0;slot<3;slot++)net.minecraft.world.Containers.dropItemStack(level,pos.getX(),pos.getY(),pos.getZ(),radio.media.getStackInSlot(slot));
         }
         super.onRemove(state,level,pos,next,moving);
     }

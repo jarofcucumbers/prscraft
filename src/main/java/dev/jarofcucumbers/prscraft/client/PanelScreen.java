@@ -21,5 +21,6 @@ public abstract class PanelScreen extends Screen {
     @Override public boolean mouseClicked(double x,double y,int b){return super.mouseClicked((x-ox)/scale,(y-oy)/scale,b);}
     @Override public boolean mouseReleased(double x,double y,int b){return super.mouseReleased((x-ox)/scale,(y-oy)/scale,b);}
     @Override public boolean mouseDragged(double x,double y,int b,double dx,double dy){return super.mouseDragged((x-ox)/scale,(y-oy)/scale,b,dx/scale,dy/scale);}
+    @Override public boolean mouseScrolled(double x,double y,double horizontal,double vertical){return super.mouseScrolled((x-ox)/scale,(y-oy)/scale,horizontal,vertical);}
     @Override public boolean isPauseScreen(){return false;}
 }

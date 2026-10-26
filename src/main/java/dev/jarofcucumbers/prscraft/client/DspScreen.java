@@ -27,6 +27,7 @@ public final class DspScreen extends PanelScreen{
         }
         button(14,96,100,Component.literal(enabled?"ON":"OFF"),b1->{enabled=!enabled;b1.setMessage(Component.literal(enabled?"ON":"OFF"));});button(126,96,150,tr("apply"),b1->save());button(288,96,160,tr("media"),b1->{var t=new CompoundTag();t.putString("action","media");PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,t));});
         if(kind.equals("correlator"))button(14,423,210,tr("corr_view"),b1->{lagView=!lagView;if(!recorded){var t=new CompoundTag();t.putString("action","view");t.putInt("graphLayers",data.getInt("graphLayers"));t.putInt("graphTerms",data.getInt("graphTerms"));t.putBoolean("correlationView",lagView);PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,t));}});
+        button(350,4,110,tr("oscilloscope"),w->minecraft.setScreen(new PlotScreen(this,data)));
         button(468,4,110,tr("spectrum"),b1->minecraft.setScreen(new SpectrumScreen(this,data)));button(586,4,120,tr("book"),b1->minecraft.setScreen(new HandbookScreen(this)));
         if(recorded)for(var r:renderables)if(r instanceof AbstractWidget w&&w.getY()>28&&w.getY()<400)w.active=false;
     }

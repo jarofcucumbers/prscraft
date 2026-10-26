@@ -16,6 +16,10 @@
     "prscraft:integrator",
     "prscraft:correlator",
     "prscraft:time_gate",
-    "prscraft:delay_line"
+    "prscraft:delay_line",
+    "prscraft:message_source",
+    "prscraft:message_codec",
+    "prscraft:channel_coder",
+    "prscraft:message_receiver"
   ]
 }

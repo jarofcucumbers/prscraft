@@ -5,7 +5,15 @@ import net.minecraft.nbt.CompoundTag;
 public final class ChallengeRules{
     private ChallengeRules(){}
     public static Set<String> achieved(CompoundTag data){
-        if(!data.getBoolean("connected"))return Set.of();var result=new HashSet<String>();
+        var result=new HashSet<String>();if(data.getBoolean("dataStream")&&data.getBoolean("physicalConnected")&&data.getString("messageError").equals("data_crc"))result.add("crc_rejected");
+        if(!data.getBoolean("connected"))return Set.copyOf(result);
+        if(data.getBoolean("dataStream")){
+            if(data.getBoolean("messageSink")&&data.getBoolean("messageCodebookMissing")&&data.getInt("messageWireBits")>0)result.add("raw_code_stream");
+            if(data.getBoolean("messageSink")&&data.getBoolean("messageMatch")&&data.getInt("messageOriginalBytes")>0){result.add("message_link");if(data.getBoolean("messageCustom")&&data.getBoolean("codebookPresent"))result.add("custom_codes");boolean unicode=false;for(byte b:data.getByteArray("messageOriginal"))if(b<0)unicode=true;if(unicode&&data.getBoolean("messageUtf8"))result.add("utf8_message");
+                var stages=data.getList("messageStages",10);for(int i=0;i<stages.size();i++){var stage=stages.getCompound(i);if(stage.getString("operation").equals("rle")&&stage.getInt("outputBits")<stage.getInt("inputBits"))result.add("rle_savings");if(stage.getString("operation").equals("huffman")&&stage.getInt("outputBits")<stage.getInt("inputBits"))result.add("huffman_savings");if(stage.getBoolean("crcValid"))result.add("crc_verified");}
+                if(data.getInt("messageCorrectedWords")>0)result.add("hamming_corrected");
+            }return Set.copyOf(result);
+        }
         var source=RadioSettings.read(data.getCompound("source"));var local=RadioSettings.read(data.getCompound("settings"));
         var decoder=ProcessorSettings.read(data.getCompound("processor"));String pipeline=data.getString("pipeline");String kind=data.getString("kind");
         if(kind.equals("gray_converter")&&!data.getString("grayOutput").isEmpty())result.add(data.getCompound("gray").getString("mode").startsWith("levels_")?"gray_levels":"gray_binary");

@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:crc_verified",
+  "display": {
+    "icon": {
+      "id": "prscraft:message_receiver"
+    },
+    "title": {
+      "translate": "advancements.prscraft.hamming_corrected.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.hamming_corrected.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

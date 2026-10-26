@@ -19,6 +19,9 @@
     "awgn",
     "q",
     "circuit",
+    "information",
+    "data_limits",
+    "plot_axes",
     "limits"
   ],
   "lessons": [
@@ -82,6 +85,30 @@
         "sin(10): choose fvz = 100 Hz",
         "sampled: compare I vs II at duty = 0.5",
         "quantized: compare L = 4, 16, 256"
+      ]
+    },
+    {
+      "id": "information",
+      "diagram": "compression",
+      "formulas": [
+        "H = −Σ p(i) log2 p(i)",
+        "Lavg = Σ p(i) length(code(i))"
+      ]
+    },
+    {
+      "id": "data_limits",
+      "diagram": "coding",
+      "formulas": [
+        "source ≤ 1024 bytes; wire ≤ 32768 bits",
+        "NRZ decision model ≠ carrier waveform demodulation"
+      ]
+    },
+    {
+      "id": "plot_axes",
+      "diagram": "axes",
+      "formulas": [
+        "time [s]: Xmin … Xmax",
+        "amplitude [u]: Ymin … Ymax"
       ]
     }
   ],
@@ -383,6 +410,61 @@
       "formulas": [
         "16384 touched pixels; does not break",
         "water cauldron: restore, spend one water level"
+      ]
+    },
+    {
+      "id": "message_source",
+      "items": [
+        "message_source"
+      ],
+      "diagram": "bytes",
+      "formulas": [
+        "UTF-8 → bytes → MSB-first NRZ",
+        "Tb = 1/Rb; 0 → A0; 1 → A1"
+      ]
+    },
+    {
+      "id": "message_codec",
+      "items": [
+        "message_codec"
+      ],
+      "diagram": "compression",
+      "formulas": [
+        "input bytes → RLE / Huffman → container",
+        "ratio = output bits / input bits"
+      ]
+    },
+    {
+      "id": "channel_coder",
+      "items": [
+        "channel_coder"
+      ],
+      "diagram": "coding",
+      "formulas": [
+        "CRC32: data → data + 32 check bits",
+        "Hamming(7,4): 4 data bits → 7 code bits"
+      ]
+    },
+    {
+      "id": "message_receiver",
+      "items": [
+        "message_receiver"
+      ],
+      "diagram": "bytes",
+      "formulas": [
+        "received levels → threshold → bits → decoder",
+        "BER = incorrect decisions / received bits"
+      ]
+    },
+    {
+      "id": "codebook_card",
+      "items": [
+        "codebook_card"
+      ],
+      "diagram": "custom_codes",
+      "formulas": [
+        "A = 0; B = 10; SPACE = 11",
+        "ABBA → 0|10|10|0 = 010100"
       ]
     }
   ],
@@ -2104,6 +2186,423 @@
           "from": 1,
           "to": 2,
           "label": "OUT → A"
+        }
+      ]
+    },
+    {
+      "id": "message_link",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "UTF-8; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_receiver",
+          "parameters": [
+            "Rb=1000; threshold=0",
+            "RF=100 MHz",
+            "thermal=OFF; μ=σ²=0"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "to": 1,
+          "label": "OUT → A",
+          "from": 0
+        }
+      ]
+    },
+    {
+      "id": "utf8_message",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "UTF-8; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_receiver",
+          "parameters": [
+            "Rb=1000; threshold=0",
+            "RF=100 MHz",
+            "thermal=OFF; μ=σ²=0"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "to": 1,
+          "label": "OUT → A",
+          "from": 0
+        }
+      ]
+    },
+    {
+      "id": "rle_savings",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "UTF-8; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_codec",
+          "parameters": [
+            "rle",
+            "Rb=1000; threshold=0",
+            "A0=-1; A1=+1"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_receiver",
+          "parameters": [
+            "Rb=1000; threshold=0",
+            "RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "container decode"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "to": 1,
+          "label": "OUT → A",
+          "from": 0
+        },
+        {
+          "to": 2,
+          "label": "OUT → A",
+          "from": 1
+        }
+      ]
+    },
+    {
+      "id": "huffman_savings",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "UTF-8; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_codec",
+          "parameters": [
+            "huffman",
+            "Rb=1000; threshold=0",
+            "A0=-1; A1=+1"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_receiver",
+          "parameters": [
+            "Rb=1000; threshold=0",
+            "RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "container decode"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "to": 1,
+          "label": "OUT → A",
+          "from": 0
+        },
+        {
+          "to": 2,
+          "label": "OUT → A",
+          "from": 1
+        }
+      ]
+    },
+    {
+      "id": "crc_verified",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "UTF-8; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:channel_coder",
+          "parameters": [
+            "crc_encode",
+            "Rb=1000; threshold=0",
+            "thermal=OFF; μ=σ²=0"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_receiver",
+          "parameters": [
+            "Rb=1000; threshold=0",
+            "RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "crc_decode"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "to": 1,
+          "label": "OUT → A",
+          "from": 0
+        },
+        {
+          "to": 2,
+          "label": "OUT → A",
+          "from": 1
+        }
+      ]
+    },
+    {
+      "id": "crc_rejected",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "UTF-8; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:channel_coder",
+          "parameters": [
+            "crc_encode",
+            "Rb=1000; threshold=0",
+            "thermal=OFF; μ=σ²=0"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_receiver",
+          "parameters": [
+            "crc_decode; μ=20; σ²=0",
+            "Rb=1000; threshold=0",
+            "thermal=OFF"
+          ],
+          "x": 498,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "to": 1,
+          "label": "OUT → A",
+          "from": 0
+        },
+        {
+          "to": 2,
+          "label": "OUT → A",
+          "from": 1
+        }
+      ]
+    },
+    {
+      "id": "hamming_corrected",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "UTF-8; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:channel_coder",
+          "parameters": [
+            "crc_encode",
+            "Rb=1000; threshold=0",
+            "thermal=OFF; μ=σ²=0"
+          ],
+          "x": 262,
+          "y": 225
+        },
+        {
+          "item": "prscraft:channel_coder",
+          "parameters": [
+            "hamming_encode",
+            "Rb=1000; threshold=0",
+            "thermal=OFF; μ=σ²=0"
+          ],
+          "x": 498,
+          "y": 225
+        },
+        {
+          "item": "prscraft:channel_coder",
+          "parameters": [
+            "hamming_decode; Rb=1000",
+            "μ=0; σ²≈0.09",
+            "thermal=OFF"
+          ],
+          "x": 24,
+          "y": 385
+        },
+        {
+          "item": "prscraft:message_receiver",
+          "parameters": [
+            "Rb=1000; threshold=0",
+            "RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "crc_decode"
+          ],
+          "x": 262,
+          "y": 385
+        }
+      ],
+      "edges": [
+        {
+          "to": 1,
+          "label": "OUT → A",
+          "from": 0
+        },
+        {
+          "to": 2,
+          "label": "OUT → A",
+          "from": 1
+        },
+        {
+          "to": 3,
+          "label": "OUT → A",
+          "from": 2
+        },
+        {
+          "to": 4,
+          "label": "OUT → A",
+          "from": 3
+        }
+      ]
+    },
+    {
+      "id": "codebook_saved",
+      "nodes": [
+        {
+          "item": "prscraft:codebook_card",
+          "parameters": [
+            "A=0",
+            "B=10",
+            "SPACE=11"
+          ],
+          "x": 24,
+          "y": 225
+        }
+      ],
+      "edges": []
+    },
+    {
+      "id": "custom_codes",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "UTF-8; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1",
+            "ABBA; card A=0/B=10"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_receiver",
+          "parameters": [
+            "Rb=1000; threshold=0",
+            "RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "same codebook card"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "to": 1,
+          "label": "OUT → A",
+          "from": 0
+        }
+      ]
+    },
+    {
+      "id": "raw_code_stream",
+      "nodes": [
+        {
+          "item": "prscraft:message_source",
+          "parameters": [
+            "UTF-8; Rb=1000",
+            "RF=100 MHz; 20 dBm",
+            "A0=-1; A1=+1",
+            "ABBA; card A=0/B=10"
+          ],
+          "x": 24,
+          "y": 225
+        },
+        {
+          "item": "prscraft:message_receiver",
+          "parameters": [
+            "Rb=1000; threshold=0",
+            "RF=100 MHz",
+            "thermal=OFF; μ=σ²=0",
+            "NO codebook card"
+          ],
+          "x": 262,
+          "y": 225
+        }
+      ],
+      "edges": [
+        {
+          "to": 1,
+          "label": "OUT → A",
+          "from": 0
         }
       ]
     }

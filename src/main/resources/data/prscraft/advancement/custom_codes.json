@@ -1,0 +1,27 @@
+{
+  "parent": "prscraft:codebook_saved",
+  "display": {
+    "icon": {
+      "id": "prscraft:message_receiver"
+    },
+    "title": {
+      "translate": "advancements.prscraft.custom_codes.title"
+    },
+    "description": {
+      "translate": "advancements.prscraft.custom_codes.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "complete"
+    ]
+  ]
+}

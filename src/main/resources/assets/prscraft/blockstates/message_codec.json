@@ -1,0 +1,20 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "prscraft:block/message_codec",
+      "y": 0
+    },
+    "facing=east": {
+      "model": "prscraft:block/message_codec",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "prscraft:block/message_codec",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "prscraft:block/message_codec",
+      "y": 270
+    }
+  }
+}

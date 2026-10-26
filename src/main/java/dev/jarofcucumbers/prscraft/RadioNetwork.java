@@ -52,7 +52,7 @@ public final class RadioNetwork {
         };public Type<? extends CustomPacketPayload> type(){return TYPE;}
     }
     public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar("7");
+        var registrar = event.registrar("8");
         registrar.playToServer(TuneCable.TYPE,TuneCable.CODEC,(request,context)->context.enqueueWork(()->{
             if(!(context.player() instanceof ServerPlayer player))return;
             if(!player.getMainHandItem().is(PRSCraft.WRENCH.get())&&!player.getOffhandItem().is(PRSCraft.WRENCH.get()))return;
@@ -80,7 +80,7 @@ public final class RadioNetwork {
             String action=request.data.getString("action");
             if(!java.util.Set.of("","media","view","reopen").contains(action))return;
             if(action.equals("view")){
-                if(player.mayBuild()&&level.mayInteract(player,request.pos)){radio.graph(request.data.getInt("graphLayers"),request.data.getInt("graphTerms"));if(request.data.contains("correlationView"))radio.correlationView(request.data.getBoolean("correlationView"));}
+                if(player.mayBuild()&&level.mayInteract(player,request.pos))try{var plot=request.data.contains("plot")?PlotSettings.read(request.data.getCompound("plot")):radio.plot();if(request.data.contains("graphLayers"))radio.graph(request.data.getInt("graphLayers"),request.data.getInt("graphTerms"));if(request.data.contains("correlationView"))radio.correlationView(request.data.getBoolean("correlationView"));radio.configurePlot(plot);}catch(IllegalArgumentException ignored){}
                 return;
             }
             String rateKey = request.save ? "prscraft_save" : action.isEmpty()?"prscraft_refresh":"prscraft_"+action;
@@ -105,10 +105,11 @@ public final class RadioNetwork {
                 else try {
                     RadioSettings next=RadioSettings.read(request.data);
                     ProcessorSettings processor=request.data.contains("processor")?ProcessorSettings.read(request.data.getCompound("processor")):radio.processor();
+                    MessageSettings message=request.data.contains("message")?MessageSettings.read(request.data.getCompound("message")):radio.message();
                     GraySettings gray=request.data.contains("gray")?GraySettings.read(request.data.getCompound("gray")):radio.gray();
                     DspSettings dsp=request.data.contains("dsp")?DspSettings.read(request.data.getCompound("dsp")):radio.dsp();
                     if(processor.demodulate()&&java.util.Set.of("unrz","urz").contains(processor.modulation())&&next.lab().amplitudeOne()<=0)throw new IllegalArgumentException("line_code");
-                    radio.configure(next);radio.configureProcessor(processor);radio.configureDsp(dsp);radio.configureGray(gray);
+                    radio.validateMessage(message);radio.validateRadio(next);radio.configureMessage(message);radio.configure(next);radio.configureProcessor(processor);radio.configureDsp(dsp);radio.configureGray(gray);
                     if(request.data.contains("graphLayers"))radio.graph(request.data.getInt("graphLayers"),request.data.getInt("graphTerms"));
                 }
                 catch (IllegalArgumentException e) { error = e.getMessage(); }

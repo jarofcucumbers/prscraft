@@ -62,7 +62,7 @@ public final class AnalyzerService{
         if(chosen==null)chosen=first;
         if(chosen!=null){data.putInt("selectedX",chosen.getX());data.putInt("selectedY",chosen.getY());data.putInt("selectedZ",chosen.getZ());
             for(int i=0;i<devices.size();i++){var t=devices.getCompound(i);if(t.getInt("x")==chosen.getX()&&t.getInt("y")==chosen.getY()&&t.getInt("z")==chosen.getZ())data.putString("portRoles",t.getString("portRoles"));}
-            data.put("capture",RadioCapture.capture(level,chosen));}
+            var capture=RadioCapture.capture(level,chosen);capture.putBoolean("analysis",true);data.put("capture",capture);}
         return data;
     }
     public static void send(ServerPlayer player,BlockPos port,BlockPos selected,boolean open){var data=scan(player.level(),port,selected);PacketDistributor.sendToPlayer(player,new RadioNetwork.Snapshot(port,open,data));if(data.getInt("deviceCount")>=3)Milestones.award(player,"survey");}

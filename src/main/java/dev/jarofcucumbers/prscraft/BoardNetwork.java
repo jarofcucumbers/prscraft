@@ -19,7 +19,17 @@ public final class BoardNetwork{
         };
         public Type<? extends CustomPacketPayload> type(){return TYPE;}
     }
-    public static void register(RegisterPayloadHandlersEvent e){e.registrar("2").playToServer(Stroke.TYPE,Stroke.CODEC,(s,c)->c.enqueueWork(()->{
+    public record Clear(BlockPos pos,boolean offhand) implements CustomPacketPayload{
+        public static final Type<Clear> TYPE=new Type<>(ResourceLocation.fromNamespaceAndPath(PRSCraft.ID,"board_clear"));
+        public static final StreamCodec<RegistryFriendlyByteBuf,Clear> CODEC=new StreamCodec<>(){public Clear decode(RegistryFriendlyByteBuf b){return new Clear(b.readBlockPos(),b.readBoolean());}public void encode(RegistryFriendlyByteBuf b,Clear p){b.writeBlockPos(p.pos);b.writeBoolean(p.offhand);}};
+        public Type<? extends CustomPacketPayload> type(){return TYPE;}
+    }
+    public static void register(RegisterPayloadHandlersEvent e){var registrar=e.registrar("3");registrar.playToServer(Clear.TYPE,Clear.CODEC,(request,context)->context.enqueueWork(()->{
+        if(!(context.player() instanceof ServerPlayer player))return;var level=player.serverLevel();var pos=request.pos();
+        if(player.distanceToSqr(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)>64||!level.hasChunkAt(pos)||!player.mayBuild()||!level.mayInteract(player,pos)||!(level.getBlockEntity(pos) instanceof DrawingBoardEntity board))return;
+        var held=player.getItemInHand(request.offhand()?InteractionHand.OFF_HAND:InteractionHand.MAIN_HAND);if(!held.is(PRSCraft.ERASER.get()))return;
+        boolean cleared=BoardTools.clearAll(board,held);player.inventoryMenu.broadcastChanges();send(player,pos,false,cleared?"":"board_clear_resource");
+    }));registrar.playToServer(Stroke.TYPE,Stroke.CODEC,(s,c)->c.enqueueWork(()->{
         if(!(c.player() instanceof ServerPlayer player))return;var level=player.serverLevel();
         if(player.distanceToSqr(s.pos.getX()+.5,s.pos.getY()+.5,s.pos.getZ()+.5)>64||!level.hasChunkAt(s.pos)||!player.mayBuild()||!level.mayInteract(player,s.pos)||!(level.getBlockEntity(s.pos) instanceof DrawingBoardEntity board))return;
         var held=player.getItemInHand(s.offhand?InteractionHand.OFF_HAND:InteractionHand.MAIN_HAND);if(!BoardTools.isTool(held))return;
@@ -32,9 +42,10 @@ public final class BoardNetwork{
         if(ChallengeRules.fullPalette(board.pixels()))Milestones.award(player,"full_palette");
         send(player,s.pos,false);
     }));}
-    public static void send(ServerPlayer p,BlockPos pos,boolean open){
+    public static void send(ServerPlayer p,BlockPos pos,boolean open){send(p,pos,open,"");}
+    public static void send(ServerPlayer p,BlockPos pos,boolean open,String error){
         if(!(p.level().getBlockEntity(pos) instanceof DrawingBoardEntity board))return;
-        var data=new CompoundTag();data.putString("kind","drawing_board");data.putByteArray("pixels",board.pixels());
+        var data=new CompoundTag();data.putString("kind","drawing_board");data.putString("error",error);data.putByteArray("pixels",board.pixels());
         PacketDistributor.sendToPlayer(p,new RadioNetwork.Snapshot(pos,open,data));
     }
 }

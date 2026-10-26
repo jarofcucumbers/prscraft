@@ -90,7 +90,8 @@ public final class RadioScreen extends Screen {
             serverError="";visibility();
         });
         button(528,170,178,tr("media"),b->{flushView();var tag=new CompoundTag();tag.putString("action","media");PacketDistributor.sendToServer(new RadioNetwork.Request(pos,false,tag));});
-        button(350,4,110,tr("lab_short"),b->{flushView();minecraft.setScreen(new LabScreen(pos,snapshot));});
+        button(232,4,110,tr("oscilloscope"),b->{flushView();minecraft.setScreen(new PlotScreen(this,snapshot));});
+        button(350,4,110,tr("lab_short"),b->{flushView();minecraft.setScreen(snapshot.getBoolean("dataStream")?new MessageScreen(pos,snapshot):new LabScreen(pos,snapshot));});
         button(468,4,110,tr("spectrum"),b->{flushView();minecraft.setScreen(new SpectrumScreen(this,snapshot));});
         button(586,4,120,tr("book"),b->{flushView();minecraft.setScreen(new HandbookScreen(this));});
         termButtons.clear();
